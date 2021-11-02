@@ -20,12 +20,12 @@ pub use solana_program;
 use solana_program::pubkey::Pubkey;
 use state::{PackCard, PackVoucher, ProvingProcess, PREFIX};
 
-solana_program::declare_id!("GLbAYokR3CtLsS7pMN1p9y9FbDwTkwRpiwYFpz9stqtv");
+solana_program::declare_id!("BW8ME2QqeUzFubR7oMn9mctq1VQhCEuHiAair39jUwM5");
 
 /// Default precision
 pub const PRECISION: u128 = 1000000000;
-/// Max probability value - 100% with precision
-pub const MAX_PROBABILITY_VALUE: u16 = 10000;
+/// Max weight value
+pub const MAX_WEIGHT_VALUE: u16 = 100;
 
 /// Generates seed bump for authorities
 pub fn find_program_address(program_id: &Pubkey, pubkey: &Pubkey) -> (Pubkey, u8) {
@@ -47,7 +47,7 @@ pub fn find_pack_card_program_address(
         &[
             PackCard::PREFIX.as_bytes(),
             &pack.to_bytes(),
-            &index.to_be_bytes(),
+            &index.to_le_bytes(),
         ],
         program_id,
     )
@@ -63,7 +63,7 @@ pub fn find_pack_voucher_program_address(
         &[
             PackVoucher::PREFIX.as_bytes(),
             &pack.to_bytes(),
-            &index.to_be_bytes(),
+            &index.to_le_bytes(),
         ],
         program_id,
     )
@@ -73,13 +73,13 @@ pub fn find_pack_voucher_program_address(
 pub fn find_proving_process_program_address(
     program_id: &Pubkey,
     pack: &Pubkey,
-    user_wallet: &Pubkey,
+    voucher_mint: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             ProvingProcess::PREFIX.as_bytes(),
             &pack.to_bytes(),
-            &user_wallet.to_bytes(),
+            &voucher_mint.to_bytes(),
         ],
         program_id,
     )

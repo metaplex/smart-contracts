@@ -1,19 +1,7 @@
 # Smart Contracts
 
-## Notes
+For now in this repo we have only NFT-packs Solana program and metaplex-tests crate where all the tests for this program is written.
 
-* Cargo Workspace
-* Anchor Workspace
-* Migrate all contracts here
-* Backwards compatiblity checks
-* IDL generation for "non-anchor" contracts
-* Forced commit/merge checks
-* Test coverage - high threshold
-* Contract - end to end testing
+In future we can use metaplex-tests crate to cover all the Metaplex programs with tests.
 
-## Structure
-
-* src
-  * <name>
-* anchor.yaml
-* cargo.yaml
+To run test go to metaplex-tests README and follow instructions.

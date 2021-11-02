@@ -1,8 +1,14 @@
 //! Pack set definitions
 
 use super::*;
-use crate::{error::NFTPacksError, math::SafeMath};
+use crate::{
+    error::NFTPacksError,
+    math::SafeMath,
+    state::{MAX_DESCRIPTION_LEN, MAX_URI_LENGTH},
+    MAX_WEIGHT_VALUE,
+};
 use borsh::{BorshDeserialize, BorshSerialize};
+use metaplex_token_metadata::state::{MasterEdition, MasterEditionV2};
 use solana_program::{
     borsh::try_from_slice_unchecked,
     msg,
@@ -10,7 +16,6 @@ use solana_program::{
     program_pack::{IsInitialized, Pack, Sealed},
     pubkey::Pubkey,
 };
-use spl_token_metadata::state::{MasterEdition, MasterEditionV2};
 
 /// Pack state
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
@@ -54,20 +59,24 @@ impl Default for PackDistributionType {
 pub struct PackSet {
     /// Account type - PackSet
     pub account_type: AccountType,
-    /// Name
-    pub name: [u8; 32],
-    /// Link to pack set image
-    pub uri: String,
+    /// Store
+    pub store: Pubkey,
     /// Pack authority
     pub authority: Pubkey,
-    /// Authority to mint voucher editions
-    pub minting_authority: Pubkey,
+    /// Description
+    pub description: String,
+    /// Link to pack set image
+    pub uri: String,
+    /// Name
+    pub name: [u8; 32],
     /// Card masters counter
     pub pack_cards: u32,
     /// Pack voucher counter
     pub pack_vouchers: u32,
+    /// Total weight
+    pub total_weight: u64,
     /// Total amount of editions pack can mint
-    pub total_editions: Option<u64>,
+    pub total_editions: u64,
     /// If true authority can make changes at deactivated phase
     pub mutable: bool,
     /// Pack state
@@ -86,15 +95,13 @@ impl PackSet {
     /// Initialize a PackSet
     pub fn init(&mut self, params: InitPackSetParams) {
         self.account_type = AccountType::PackSet;
+        self.store = params.store;
         self.name = params.name;
+        self.description = params.description;
         self.uri = params.uri;
         self.authority = params.authority;
-        self.minting_authority = params.minting_authority;
-        self.total_editions = if params.distribution_type == PackDistributionType::Unlimited {
-            None
-        } else {
-            Some(0)
-        };
+        self.total_weight = 0;
+        self.total_editions = 0;
         self.pack_cards = 0;
         self.pack_vouchers = 0;
         self.mutable = params.mutable;
@@ -106,13 +113,21 @@ impl PackSet {
     }
 
     /// Increase pack cards counter
-    pub fn add_pack_card(&mut self) {
-        self.pack_cards += 1;
+    pub fn add_pack_card(&mut self) -> Result<(), ProgramError> {
+        self.pack_cards = self.pack_cards.error_increment()?;
+        Ok(())
     }
 
     /// Increase pack voucher counter
-    pub fn add_pack_voucher(&mut self) {
-        self.pack_vouchers += 1;
+    pub fn add_pack_voucher(&mut self) -> Result<(), ProgramError> {
+        self.pack_vouchers += self.pack_vouchers.error_increment()?;
+        Ok(())
+    }
+
+    /// Decrement supply value
+    pub fn decrement_supply(&mut self) -> Result<(), ProgramError> {
+        self.total_editions = self.total_editions.error_decrement()?;
+        Ok(())
     }
 
     /// Check if pack is in activated state
@@ -146,60 +161,99 @@ impl PackSet {
         Ok(())
     }
 
-    /// Add new card editions to pack
-    pub fn add_card_editions(
+    /// Add new card volume to pack
+    pub fn add_card_volume(
         &mut self,
-        card_max_supply: &Option<u32>,
+        card_weight: u32,
+        card_supply: u32,
         card_master_edition: &MasterEditionV2,
     ) -> Result<(), ProgramError> {
         match self.distribution_type {
             PackDistributionType::Unlimited => {
-                if card_max_supply.is_some() {
-                    return Err(NFTPacksError::WrongMaxSupply.into());
-                }
-
                 if card_master_edition.max_supply().is_some() {
                     return Err(NFTPacksError::WrongMasterSupply.into());
                 }
+
+                if card_weight == 0 || card_weight > (MAX_WEIGHT_VALUE as u32) {
+                    return Err(NFTPacksError::WrongCardProbability.into());
+                }
+
+                if card_supply != 0 {
+                    return Err(NFTPacksError::CardShouldntHaveSupplyValue.into());
+                }
+
+                self.total_weight = self.total_weight.error_add(card_weight as u64)?;
             }
-            _ => {
-                if let Some(m_supply) = card_max_supply {
-                    if let Some(m_e_max_supply) = card_master_edition.max_supply() {
-                        if (*m_supply as u64)
-                            > m_e_max_supply.error_sub(card_master_edition.supply())?
-                        {
-                            return Err(NFTPacksError::WrongMaxSupply.into());
-                        }
-                    }
-                    if *m_supply == 0 {
+
+            PackDistributionType::MaxSupply => {
+                if let Some(m_e_max_supply) = card_master_edition.max_supply() {
+                    if (card_supply as u64)
+                        > m_e_max_supply.error_sub(card_master_edition.supply())?
+                        || card_supply == 0
+                    {
                         return Err(NFTPacksError::WrongMaxSupply.into());
                     }
-
-                    self.total_editions = Some(
-                        self.total_editions
-                            .ok_or(NFTPacksError::MissingEditionsInPack)?
-                            .error_add(*m_supply as u64)?,
-                    );
-                } else {
-                    return Err(NFTPacksError::WrongMaxSupply.into());
                 }
+
+                if card_weight != 0 {
+                    return Err(NFTPacksError::CardShouldntHaveProbabilityValue.into());
+                }
+
+                self.total_editions = self.total_editions.error_add(card_supply as u64)?;
+            }
+
+            PackDistributionType::Fixed => {
+                if let Some(m_e_max_supply) = card_master_edition.max_supply() {
+                    if (card_supply as u64)
+                        > m_e_max_supply.error_sub(card_master_edition.supply())?
+                        || card_supply == 0
+                    {
+                        return Err(NFTPacksError::WrongMaxSupply.into());
+                    }
+                }
+
+                if card_weight == 0 || card_weight > (MAX_WEIGHT_VALUE as u32) {
+                    return Err(NFTPacksError::WrongCardProbability.into());
+                }
+
+                self.total_editions = self.total_editions.error_add(card_supply as u64)?;
+                self.total_weight = self.total_weight.error_add(card_weight as u64)?;
             }
         }
 
         Ok(())
     }
+
+    /// fill unused bytes with zeroes
+    pub fn puff_out_data_fields(&mut self) {
+        let mut array_of_zeroes = vec![];
+        while array_of_zeroes.len() < MAX_URI_LENGTH - self.uri.len() {
+            array_of_zeroes.push(0u8);
+        }
+        self.uri = self.uri.clone() + std::str::from_utf8(&array_of_zeroes).unwrap();
+
+        let mut array_of_zeroes = vec![];
+
+        while array_of_zeroes.len() < MAX_DESCRIPTION_LEN - self.description.len() {
+            array_of_zeroes.push(0u8);
+        }
+        self.description =
+            self.description.clone() + std::str::from_utf8(&array_of_zeroes).unwrap();
+    }
 }
 
 /// Initialize a PackSet params
 pub struct InitPackSetParams {
+    /// Store
+    pub store: Pubkey,
     /// Name
     pub name: [u8; 32],
+    /// Description
+    pub description: String,
     /// URI
     pub uri: String,
     /// Pack authority
     pub authority: Pubkey,
-    /// Authority to mint voucher editions
-    pub minting_authority: Pubkey,
     /// If true authority can make changes at deactivated phase
     pub mutable: bool,
     /// Distribution type
@@ -215,8 +269,7 @@ pub struct InitPackSetParams {
 impl Sealed for PackSet {}
 
 impl Pack for PackSet {
-    // 1 + 32 + 200 + 32 + 32 + 4 + 4 + 9 + 1 + 1 + 1 + 4 + 8 + 9
-    const LEN: usize = 338;
+    const LEN: usize = 853;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
