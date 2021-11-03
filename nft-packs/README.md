@@ -34,7 +34,7 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
     - after this operation, program saves info about which voucher was used to claim a card
 - Edit pack
     - can be called only if pack is in deactivated state
-    - can be changed pack name, description, URI(pack wallpaper) and mutable field
+    - allows changing pack `name`, `description`, `URI`(pack wallpaper) and `mutable` fields
 - Close pack
     - can be called only if pack doesn't have redeem end date
     - irreversible pack state changing
