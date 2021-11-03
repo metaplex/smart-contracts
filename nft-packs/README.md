@@ -1,4 +1,6 @@
-# Metatlex NFT packs Solana program
+# Metaplex NFT packs Solana program
+
+Supports creation of "mystery" packages of NFTs that are not revealed until after "opening", similar to the experience you have when purchasing a pack of baseball cards at the store.
 
 ## NFT packs actions
 
