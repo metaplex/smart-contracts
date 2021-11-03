@@ -26,7 +26,7 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
     - when pack is deactivated users can't interact with it and admin can change data
 - Request card for redeem
     - user calls this instruction to receive index of card which he can try to redeem next(1 of n)
-    - index of next card to redeem is writing to ProvingProcess(maybe will change this name) account
+    - index of next card to redeem is written to ProvingProcess account
     - ProvingProcess it's PDA account with seeds [pack, "proving", voucher_mint_key]
 - Claim
     - user call this instruction after he has card index in ProvingProcess account
