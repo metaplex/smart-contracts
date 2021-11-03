@@ -40,7 +40,7 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
     - this action is irreversible
 - Delete card
     - cards can be deleted only if pack is in closed state
-    - deleting cards means transferring MasterEdition back to the admin and zeroing PackCard account, so we just empty the balance
+    - deleting cards means transferring MasterEdition back to the admin, zeroing PackCard account and emptying the card balance
 - Delete voucher
     - vouchers can be deleted only if pack is in closed state
     - empty the balance
