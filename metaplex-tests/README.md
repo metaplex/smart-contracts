@@ -1,9 +1,9 @@
 # Metaplex-tests crate
 
+Before run tests you have to move *.so program files on which we depends.
+
+More specifically there should be shared objects(*.so files) for [Metaplex token metadata program](https://github.com/metaplex-foundation/metaplex/tree/master/rust/token-metadata/program), [Metaplex program](https://github.com/metaplex-foundation/metaplex/tree/master/rust/metaplex/program) and [randomness oracle program](https://github.com/atticlab/randomness-oracle/tree/main/program).
+
+To get shared objects of that program you have to build it with command `cargo build-bpf` and this command will show you path to that file.
+
 To run tests just do `cargo test-bpf`
-
-Also you can see that we have here *.so file of programs which we are depends from.
-
-We move it here because cargo for some reason doesn't create *.so files of dependent programs when we run `cargo build-bpf`.
-
-There is [possibility](https://docs.rs/solana-program-test/1.8.2/solana_program_test/struct.ProgramTest.html#method.add_program) to add programs to the test environment by setting `process_instruction` methods but it didn't work out
