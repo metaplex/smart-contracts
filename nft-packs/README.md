@@ -21,7 +21,7 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
     - we can add only voucher which we are own
 - Activate
     - in activated state admin can't change any pack data
-    - users can start to open a pack, means call RequestCardForRedeem and ClaimPack
+    - users can start to open a pack (using `RequestCardForRedeem` and `ClaimPack` methods)
 - Deactivate
     - when pack is deactivated users can't interact with it and admin can change data
 - Request card for redeem
