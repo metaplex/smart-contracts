@@ -37,7 +37,7 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
     - allows changing pack `name`, `description`, `URI`(pack wallpaper) and `mutable` fields
 - Close pack
     - can be called only if pack doesn't have redeem end date
-    - irreversible pack state changing
+    - this action is irreversible
 - Delete card
     - cards can be deleted only if pack is in closed state
     - deleting cards means transferring MasterEdition back to the admin and zeroing PackCard account, so we just empty the balance
