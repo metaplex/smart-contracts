@@ -27,7 +27,7 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
 - Request card for redeem
     - user calls this instruction to receive index of card which he can try to redeem next(1 of n)
     - index of next card to redeem is written to ProvingProcess account
-    - ProvingProcess it's PDA account with seeds [pack, "proving", voucher_mint_key]
+    - ProvingProcess is a PDA account with seeds [pack, "proving", voucher_mint_key]
 - Claim
     - user call this instruction after he has card index in ProvingProcess account
     - program is using RandomOracle program to count probability to decide will user receive Edition from this card or not
