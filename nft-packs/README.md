@@ -6,8 +6,8 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
 
 - Admin init a pack
     - pack account is PDA with seeds [“nft-pack”, nft_pack_program_id, store, pack_admin_key, pack_name]
-    - store address sawing to pack
-    - set distribution type(max_supply, fixed, unlimited)
+    - store address is saved in pack
+    - set distribution type(max_supply, weighted, unlimited)
     - set allowed amount to redeem
     - set if it’s mutable
     - set dates(redeem start and end)
@@ -17,8 +17,9 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
 - Add voucher
     - save MasterEdition data(keys) so we can match Editions with this Master when users will open a pack
     - pack can have multiple different vouchers and every voucher has the same value and gives users the same amounts of attempts to redeem cards
-    - voucher it's Edition means token in terms of Metaplex but in terms of nft-packs program it's PDA account with seeds [pack_key, "voucher"] which stores some data
+    - voucher is Edition in terms of Metaplex but in terms of nft-packs program it's PDA account with seeds [pack_key, "voucher"] which stores some data
     - we can add only voucher which we are own
+    - to sum up, when we add voucher to the pack we save MasterEdition key to the pack and every user who has Edition from that MasterEdition owns a voucher for created pack and can open it
 - Activate
     - in activated state admin can't change any pack data
     - users can start to open a pack (using `RequestCardForRedeem` and `ClaimPack` methods)
@@ -36,8 +37,9 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
     - can be called only if pack is in deactivated state
     - allows changing pack `name`, `description`, `URI`(pack wallpaper) and `mutable` fields
 - Close pack
-    - can be called only if pack doesn't have redeem end date
-    - this action is irreversible
+    - can be called at any time if pack doesn't have redeem end date and if it has only after redeem end date
+    - if admin tries to call this instruction before redeem end date program will return `EndDateNotArrived` error
+    - irreversible pack state changing
 - Delete card
     - cards can be deleted only if pack is in closed state
     - deleting cards means transferring MasterEdition back to the admin, zeroing PackCard account and emptying the card balance
@@ -65,7 +67,7 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
 |total_editions|u64|Total amount of editions pack can mint|
 |mutable|	bool|	If true authority can make changes at deactivated phase|
 |pack_state|	enum|	[not activated, activated, deactivated, ended]|
-|distribution_type|	enum|	[max_supply, fixed, unlimited]|
+|distribution_type|	enum|	[max_supply, weighted, unlimited]|
 |allowed_amount_to_redeem|u32|	Count of cards user can try to redeem|
 |redeem_start_date|	u64|	Date when users can start to redeem cards|
 |redeem_end_date|	Option(u64)|	Date when pack set becomes inactive|
