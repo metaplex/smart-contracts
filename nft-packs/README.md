@@ -31,7 +31,7 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
 - Claim
     - user call this instruction after they receive a card index from `Request card for redeem`
     - program is using RandomOracle program to count probability to decide will user receive Edition from this card or not
-    - after this operation program saves info that some specific voucher was used to claim card, just by incrementing some variable
+    - after this operation, program saves info about which voucher was used to claim a card
 - Edit pack
     - can be called only if pack is in deactivated state
     - can be changed pack name, description, URI(pack wallpaper) and mutable field
