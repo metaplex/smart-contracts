@@ -1,0 +1,22 @@
+[package]
+name = "metaplex-tests"
+version = "0.1.0"
+edition = "2018"
+
+[features]
+test-bpf = []
+
+[dependencies]
+solana-program = "1.7.11"
+borsh = "0.9.1"
+spl-token = { version="3.2.0", features = [ "no-entrypoint" ] }
+metaplex = { git = "https://github.com/metaplex-foundation/metaplex", features = ["no-entrypoint"] }
+metaplex-token-vault = { git = "https://github.com/metaplex-foundation/metaplex", features = [ "no-entrypoint" ] }
+metaplex-token-metadata = { git = "https://github.com/metaplex-foundation/metaplex", features = [ "no-entrypoint" ] }
+randomness-oracle-program = { git = "https://github.com/atticwip/randomness-oracle", features = [ "no-entrypoint" ] }
+metaplex-nft-packs = { path = "../nft-packs", features = [ "no-entrypoint" ] }
+
+[dev-dependencies]
+num-traits = "0.2.14"
+solana-program-test = "1.7.11"
+solana-sdk = "1.7.11"

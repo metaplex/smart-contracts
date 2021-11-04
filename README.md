@@ -1,19 +1,15 @@
 # Smart Contracts
 
-## Notes
+The collection of [metaplex](https://metaplex.com) on-chain programs (aka smart contracts)
 
-* Cargo Workspace
-* Anchor Workspace
-* Migrate all contracts here
-* Backwards compatiblity checks
-* IDL generation for "non-anchor" contracts
-* Forced commit/merge checks
-* Test coverage - high threshold
-* Contract - end to end testing
+> Many programs currently reside in the [metaplex-foundation](https://github.com/metaplex-foundation/metaplex/tree/master/rust) repository but most will be moving here.
 
-## Structure
+### Programs
 
-* src
-  * <name>
-* anchor.yaml
-* cargo.yaml
+- [nft-packs](./nft-packs/README.md) - Allow creation of mystery packs of NFTs that are revealed after "opening"
+- [metaplex-tests](./metaplex-tests/README.md) -  this repository's tests
+
+
+In future we can use metaplex-tests crate to cover all the Metaplex programs with tests.
+
+To run test go to metaplex-tests README and follow instructions.
