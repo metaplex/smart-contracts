@@ -2,9 +2,9 @@
 
 use crate::{
     error::NFTPacksError,
-    find_pack_card_program_address, find_program_authority,
+    find_pack_card_program_address, find_program_authority, find_pack_config_program_address,
     math::SafeMath,
-    state::{MasterEditionHolder, PackCard, PackDistributionType, PackSet, ProvingProcess, PREFIX},
+    state::{MasterEditionHolder, PackCard, PackDistributionType, PackSet, ProvingProcess, PREFIX, PackConfig},
     utils::*,
 };
 use metaplex_token_metadata::state::{MasterEditionV2, Metadata};
@@ -25,6 +25,7 @@ use spl_token::state::Account;
 pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let pack_set_account = next_account_info(account_info_iter)?;
+    let pack_config_account = next_account_info(account_info_iter)?;
     let proving_process_account = next_account_info(account_info_iter)?;
     let user_wallet_account = next_account_info(account_info_iter)?;
     let user_voucher_token_account = next_account_info(account_info_iter)?;
@@ -50,8 +51,14 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
 
     // Validate owners
     assert_owned_by(randomness_oracle_account, &randomness_oracle_program::id())?;
+    assert_owned_by(pack_config_account, program_id)?;
 
     assert_signer(&user_wallet_account)?;
+
+    let (pack_config_pubkey, _) = find_pack_config_program_address(program_id, pack_set_account.key);
+    assert_account_key(pack_config_account, &pack_config_pubkey)?;
+
+    let mut pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
 
     let mut pack_set = PackSet::unpack(&pack_set_account.data.borrow())?;
     let mut proving_process = ProvingProcess::unpack(&proving_process_account.data.borrow_mut())?;
@@ -113,10 +120,13 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
     // set value to 0 so user can't redeem same card twice and can't redeem any card
     proving_process.next_card_to_redeem = 0;
 
-    if pack_set.distribution_type != PackDistributionType::Unlimited && pack_card.max_supply == 0 {
-        msg!("This card ran out of editions. Please try the different one.");
-        ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;
-        return Ok(());
+    if pack_set.distribution_type != PackDistributionType::Unlimited && pack_card.max_supply.error_decrement()? == 0 {
+        msg!("This card ran out of editions. It was the last one mint.");
+        pack_config.weights.remove(&index);
+    }
+
+    if pack_set.distribution_type == PackDistributionType::MaxSupply {
+        pack_config.weights.insert(index, pack_card.max_supply.error_decrement()?);
     }
 
     let probability = get_card_probability(&mut pack_set, &mut pack_card)?;
@@ -155,6 +165,7 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;
     PackSet::pack(pack_set, *pack_set_account.data.borrow_mut())?;
     PackCard::pack(pack_card, *pack_card_account.data.borrow_mut())?;
+    PackConfig::pack(pack_config, *pack_config_account.data.borrow_mut())?;
 
     Ok(())
 }

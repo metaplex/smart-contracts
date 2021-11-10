@@ -3,7 +3,7 @@
 
 use crate::{
     find_pack_card_program_address, find_pack_voucher_program_address, find_program_authority,
-    find_proving_process_program_address, state::PackDistributionType,
+    find_proving_process_program_address, find_pack_config_program_address, state::PackDistributionType,
 };
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -100,6 +100,7 @@ pub enum NFTPacksInstruction {
     ///
     /// Accounts:
     /// - read, write                   pack_set
+    /// - write                         pack_config (PDA, ['config', pack])
     /// - write                         pack_card (PDA, ['card', pack, index])
     /// - signer                        authority
     /// - read                          master_edition
@@ -174,6 +175,7 @@ pub enum NFTPacksInstruction {
     ///
     /// Accounts:
     /// - read, write       pack_set
+    /// - write             pack_config (PDA, ['config', pack])
     /// - read, write       proving_process (PDA, ['proving', pack, user_wallet])
     /// - signer            user_wallet
     /// - read              user_voucher_token
@@ -265,6 +267,7 @@ pub enum NFTPacksInstruction {
     ///
     /// Accounts:
     /// - read                     pack_set
+    /// - read                     pack_config (PDA, ['config', pack])
     /// - read                     store
     /// - read                     edition
     /// - read                     edition_mint
@@ -319,9 +322,11 @@ pub fn add_card_to_pack(
 ) -> Instruction {
     let (program_authority, _) = find_program_authority(program_id);
     let (pack_card, _) = find_pack_card_program_address(program_id, pack_set, args.index);
+    let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
 
     let accounts = vec![
         AccountMeta::new(*pack_set, false),
+        AccountMeta::new(pack_config, false),
         AccountMeta::new(pack_card, false),
         AccountMeta::new(*authority, true),
         AccountMeta::new_readonly(*master_edition, false),
@@ -434,6 +439,8 @@ pub fn claim_pack(
     let (pack_card, _) = find_pack_card_program_address(program_id, pack_set, index);
     let (program_authority, _) = find_program_authority(program_id);
 
+    let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
+
     let edition_number = (index as u64)
         .checked_div(metaplex_token_metadata::state::EDITION_MARKER_BIT_SIZE)
         .unwrap();
@@ -451,6 +458,7 @@ pub fn claim_pack(
 
     let accounts = vec![
         AccountMeta::new(*pack_set, false),
+        AccountMeta::new(pack_config, false),
         AccountMeta::new(proving_process, false),
         AccountMeta::new(*user_wallet, true),
         AccountMeta::new_readonly(*user_voucher_token, false),
@@ -592,10 +600,13 @@ pub fn request_card_for_redeem(
     let (proving_process, _) =
         find_proving_process_program_address(program_id, pack_set, edition_mint);
 
+    let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
+
     let (pack_voucher, _) = find_pack_voucher_program_address(program_id, pack_set, index);
 
     let accounts = vec![
         AccountMeta::new(*pack_set, false),
+        AccountMeta::new_readonly(pack_config, false),
         AccountMeta::new_readonly(*store, false),
         AccountMeta::new_readonly(*edition, false),
         AccountMeta::new_readonly(*edition_mint, false),

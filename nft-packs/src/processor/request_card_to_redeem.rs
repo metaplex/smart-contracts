@@ -4,8 +4,9 @@ use crate::{
     error::NFTPacksError,
     instruction::RequestCardToRedeemArgs,
     math::SafeMath,
-    state::{InitProvingProcessParams, PackSet, PackVoucher, ProvingProcess},
+    state::{InitProvingProcessParams, PackSet, PackConfig, PackVoucher, ProvingProcess},
     utils::*,
+    find_pack_config_program_address,
 };
 use metaplex::state::Store;
 use metaplex_token_metadata::{
@@ -32,6 +33,7 @@ pub fn request_card_for_redeem(
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let pack_set_account = next_account_info(account_info_iter)?;
+    let pack_config_account = next_account_info(account_info_iter)?;
     let store_account = next_account_info(account_info_iter)?;
     let edition_data_account = next_account_info(account_info_iter)?;
     let edition_mint_account = next_account_info(account_info_iter)?;
@@ -52,6 +54,12 @@ pub fn request_card_for_redeem(
     assert_owned_by(edition_mint_account, &spl_token::id())?;
     assert_owned_by(user_token_account, &spl_token::id())?;
     assert_owned_by(voucher_account, program_id)?;
+    assert_owned_by(pack_config_account, program_id)?;
+
+    let (pack_config_pubkey, _) = find_pack_config_program_address(program_id, pack_set_account.key);
+    assert_account_key(pack_config_account, &pack_config_pubkey)?;
+
+    let pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
 
     let store = Store::from_account_info(store_account)?;
 
@@ -152,6 +160,10 @@ pub fn request_card_for_redeem(
     }
 
     let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
+
+    // TODO:
+    //      call new probability calculation method instead of calculation below
+    //      remove old probability calculation
 
     let min: u32 = (1 as u32).error_add(u16::MAX as u32)?;
     // increment pack cards to include max index

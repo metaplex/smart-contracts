@@ -2,10 +2,10 @@
 
 use crate::{
     error::NFTPacksError,
-    find_pack_card_program_address, find_program_authority,
+    find_pack_card_program_address, find_program_authority, find_pack_config_program_address,
     instruction::AddCardToPackArgs,
     math::SafeMath,
-    state::{InitPackCardParams, PackCard, PackSet, PackSetState},
+    state::{InitPackCardParams, PackConfig, PackCard, PackSet, PackDistributionType, PackSetState, MAX_PACK_CARDS_AMOUNT},
     utils::*,
 };
 use metaplex::state::Store;
@@ -21,6 +21,7 @@ use solana_program::{
     program_pack::Pack,
     pubkey::Pubkey,
     sysvar::{rent::Rent, Sysvar},
+    program_error::ProgramError,
 };
 use spl_token::state::Account;
 
@@ -32,6 +33,7 @@ pub fn add_card_to_pack(
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let pack_set_info = next_account_info(account_info_iter)?;
+    let pack_config_info = next_account_info(account_info_iter)?;
     let pack_card_info = next_account_info(account_info_iter)?;
     let authority_info = next_account_info(account_info_iter)?;
     let master_edition_info = next_account_info(account_info_iter)?;
@@ -56,7 +58,7 @@ pub fn add_card_to_pack(
     let AddCardToPackArgs {
         max_supply,
         weight,
-        index: _,
+        index,
     } = args;
 
     let mut pack_set = PackSet::unpack(&pack_set_info.data.borrow_mut())?;
@@ -65,6 +67,25 @@ pub fn add_card_to_pack(
 
     if pack_set.pack_state != PackSetState::NotActivated {
         return Err(NFTPacksError::WrongPackState.into());
+    }
+
+    if pack_set.pack_cards.error_add(1)? > MAX_PACK_CARDS_AMOUNT {
+        return Err(NFTPacksError::PackIsFullWithCards.into());
+    }
+
+    let (pack_config_pubkey, config_bump_seed) = find_pack_config_program_address(program_id, pack_set_info.key);
+    assert_account_key(pack_config_info, &pack_config_pubkey)?;
+
+    let pack_config_seeds = &[PackConfig::PREFIX.as_bytes(), &pack_set_info.key.to_bytes()[..32], &[config_bump_seed]];
+
+    let mut pack_config = get_pack_config_data(program_id, pack_config_info, authority_info, pack_config_seeds, config_bump_seed, rent)?;
+    match pack_set.distribution_type {
+        PackDistributionType::MaxSupply => {
+            pack_config.weights.insert(index, max_supply);
+        }
+        _ => {
+            pack_config.weights.insert(index, weight as u32);
+        }
     }
 
     // new pack card index
@@ -151,6 +172,41 @@ pub fn add_card_to_pack(
 
     PackCard::pack(pack_card, *pack_card_info.data.borrow_mut())?;
     PackSet::pack(pack_set, *pack_set_info.data.borrow_mut())?;
+    PackConfig::pack(pack_config, *pack_config_info.data.borrow_mut())?;
 
     Ok(())
+}
+
+/// Returns deserialized pack config data or initialized if it wasn't initialized yet
+pub fn get_pack_config_data<'a>(
+    program_id: &Pubkey,
+    account_info: &AccountInfo<'a>,
+    user_wallet: &AccountInfo<'a>,
+    signers_seeds: &[&[u8]],
+    bump_seed: u8,
+    rent: &Rent,
+) -> Result<PackConfig, ProgramError> {
+    let unpack = PackConfig::unpack(&account_info.data.borrow_mut());
+
+    let proving_process = match unpack {
+        Ok(data) => Ok(data),
+        Err(_) => {
+            create_account::<PackConfig>(
+                program_id,
+                user_wallet.clone(),
+                account_info.clone(),
+                &[&[signers_seeds, &[&[bump_seed]]].concat()],
+                rent,
+            )?;
+
+            msg!("New pack config account was created");
+
+            let mut data = PackConfig::unpack_unchecked(&account_info.data.borrow_mut())?;
+
+            data.init();
+            Ok(data)
+        }
+    };
+
+    proving_process
 }

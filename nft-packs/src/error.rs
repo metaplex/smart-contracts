@@ -155,6 +155,10 @@ pub enum NFTPacksError {
     /// Cards for this pack shouldn't have supply value
     #[error("Cards for this pack shouldn't have supply value")]
     CardShouldntHaveSupplyValue,
+
+    /// Pack is already full of cards
+    #[error("Pack is already full of cards")]
+    PackIsFullWithCards,
 }
 
 impl From<NFTPacksError> for ProgramError {
