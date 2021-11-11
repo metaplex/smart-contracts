@@ -1,16 +1,14 @@
 //! Pack config definitions
+use crate::math::SafeMath;
 
 use super::*;
-use crate::math::SafeMath;
 use borsh::{BorshDeserialize, BorshSerialize};
 use num_traits::ToPrimitive;
 use solana_program::{
     msg,
     program_error::ProgramError,
     program_pack::{IsInitialized, Pack, Sealed},
-    pubkey::Pubkey,
 };
-use std::collections::BTreeMap;
 
 /// Pack config. PDA (["config", pack_key], program_id)
 #[repr(C)]
@@ -38,7 +36,7 @@ impl PackConfig {
     }
 
     /// Remove a weight
-    pub fn removeAt(&mut self, index: u32) {
+    pub fn remove_at(&mut self, index: u32) {
         let idx = self.weights.iter().position(|x| x.0 == index);
         idx.map(|x| self.weights.swap_remove(x));
     }
@@ -46,8 +44,8 @@ impl PackConfig {
     /// Select a random choice with weights
     pub fn select_weighted_random(self, rand: u16, weight_sum: u64) -> Result<u32, ProgramError> {
         let selected = self.weights.last().unwrap().0;
-        let rndp = (rand as f32) / (u16::MAX as f32);
-        let bound = (rndp * weight_sum as f32).floor().to_u32().unwrap();
+        let rndp = rand as f64 / u16::MAX as f64;
+        let bound = (rndp * weight_sum as f64).floor().to_u32().unwrap();
         for i in self.weights {
             let sel = bound.error_sub(i.1)?;
             if sel <= 0 {

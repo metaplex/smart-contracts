@@ -65,7 +65,7 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
 
     // Decrement PackCard's counter in PackSet instance
     pack_set.pack_cards = pack_set.pack_cards.error_decrement()?;
-    pack_config.removeAt(index as u32);
+    pack_config.remove_at(index as u32);
     pack_config.sort();
 
     // Transfer PackCard tokens

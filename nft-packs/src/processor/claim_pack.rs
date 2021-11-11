@@ -128,7 +128,7 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
         && pack_card.max_supply.error_decrement()? == 0
     {
         msg!("This card ran out of editions. It was the last one mint.");
-        pack_config.removeAt(index as u32);
+        pack_config.remove_at(index as u32);
     }
 
     if pack_set.distribution_type == PackDistributionType::MaxSupply {
