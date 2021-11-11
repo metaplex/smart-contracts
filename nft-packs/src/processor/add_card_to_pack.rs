@@ -83,7 +83,6 @@ pub fn add_card_to_pack(
     let pack_config_seeds = &[
         PackConfig::PREFIX.as_bytes(),
         &pack_set_info.key.to_bytes()[..32],
-        &[config_bump_seed],
     ];
 
     let mut pack_config = get_pack_config_data(
