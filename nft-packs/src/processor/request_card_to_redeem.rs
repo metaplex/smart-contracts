@@ -25,6 +25,7 @@ use solana_program::{
     program_pack::Pack,
     pubkey::Pubkey,
     sysvar::{rent::Rent, Sysvar},
+    msg,
 };
 use spl_token::state::Account;
 
@@ -64,6 +65,10 @@ pub fn request_card_for_redeem(
     assert_account_key(pack_config_account, &pack_config_pubkey)?;
 
     let pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
+
+    for el in pack_config.weights.iter() {
+        msg!("{:?}", el);
+    }
 
     let store = Store::from_account_info(store_account)?;
 

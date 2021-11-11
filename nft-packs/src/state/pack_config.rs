@@ -34,21 +34,21 @@ impl PackConfig {
 
     /// Sort the weights vec
     pub fn sort(&mut self) {
-        self.weights.sort_by(|l, r| r.cmp(l));
+        self.weights.sort_by_key(|k| k.1);
     }
 
     /// Select a random choice with weights
     pub fn select_weighted_random(self, rand: u16, weight_sum: u64) -> Result<u32, ProgramError> {
-        let selected = self.weights.last().unwrap().0;
-        let rndp = (rand as f32) / (u16::MAX as f32);
-        let bound = (rndp * weight_sum as f32).floor().to_u32().unwrap();
-        for i in self.weights {
-            let sel = bound.error_sub(i.1)?;
-            if sel <= 0 {
-                return Ok(i.0);
-            }
-        }
-        return Ok(selected);
+        // let selected = self.weights.last().unwrap().0;
+        // let rndp = (rand as f32) / (u16::MAX as f32);
+        // let bound = (rndp * weight_sum as f32).floor().to_u32().unwrap();
+        // for i in self.weights {
+        //     let sel = bound.error_sub(i.1)?;
+        //     if sel <= 0 {
+        //         return Ok(i.0);
+        //     }
+        // }
+        return Ok(4);
     }
 }
 
@@ -58,7 +58,7 @@ impl Pack for PackConfig {
     // TODO: check if we can hold more
     /// Max size of config to hold max allowed amount of cards. 50 ?
     /// 1+(12*50)
-    const LEN: usize = 601;
+    const LEN: usize = 10240;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;

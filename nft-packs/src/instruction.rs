@@ -283,6 +283,9 @@ pub enum NFTPacksInstruction {
     /// Parameters:
     /// - index    u32
     RequestCardForRedeem(RequestCardToRedeemArgs),
+
+    /// Iterate instruction
+    Iterate,
 }
 
 /// Create `InitPack` instruction
@@ -623,6 +626,26 @@ pub fn request_card_for_redeem(
     Instruction::new_with_borsh(
         *program_id,
         &NFTPacksInstruction::RequestCardForRedeem(RequestCardToRedeemArgs { index }),
+        accounts,
+    )
+}
+
+/// Create `Iterate` instruction
+#[allow(clippy::too_many_arguments)]
+pub fn iterate(
+    program_id: &Pubkey,
+    pack_set: &Pubkey,
+) -> Instruction {
+    let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
+
+    let accounts = vec![
+        AccountMeta::new(*pack_set, false),
+        AccountMeta::new(pack_config, false),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &NFTPacksInstruction::Iterate,
         accounts,
     )
 }

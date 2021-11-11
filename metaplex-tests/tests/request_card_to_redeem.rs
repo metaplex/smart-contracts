@@ -51,7 +51,7 @@ async fn create_master_edition(
 }
 
 #[tokio::test]
-async fn success() {
+async fn successX() {
     let mut context = nft_packs_program_test().start_with_context().await;
 
     let name = [7; 32];
@@ -86,9 +86,6 @@ async fn success() {
         .await
         .unwrap();
 
-    let (card_metadata, card_master_edition, card_master_token_holder) =
-        create_master_edition(&mut context, &test_pack_set).await;
-
     let (voucher_metadata, voucher_master_edition, voucher_master_token_holder) =
         create_master_edition(&mut context, &test_pack_set).await;
 
@@ -121,22 +118,28 @@ async fn success() {
         .await
         .unwrap();
 
-    let test_pack_card = TestPackCard::new(&test_pack_set, 1);
-    test_pack_set
-        .add_card(
-            &mut context,
-            &test_pack_card,
-            &card_master_edition,
-            &card_metadata,
-            &card_master_token_holder,
-            AddCardToPackArgs {
-                max_supply: 5,
-                weight: 100,
-                index: test_pack_card.index,
-            },
-        )
-        .await
-        .unwrap();
+    for el in (1..100) {
+        let (card_metadata, card_master_edition, card_master_token_holder) =
+            create_master_edition(&mut context, &test_pack_set).await;
+
+        let test_pack_card = TestPackCard::new(&test_pack_set, el);
+        test_pack_set
+            .add_card(
+                &mut context,
+                &test_pack_card,
+                &card_master_edition,
+                &card_metadata,
+                &card_master_token_holder,
+                AddCardToPackArgs {
+                    max_supply: 5,
+                    weight: 100,
+                    index: test_pack_card.index,
+                },
+            )
+            .await
+            .unwrap();
+        context.warp_to_slot(((el*2)+1).into()).unwrap();
+    }
 
     let test_pack_voucher = TestPackVoucher::new(&test_pack_set, 1);
 
@@ -174,18 +177,18 @@ async fn success() {
         .await
         .unwrap();
 
-    let (proving_process_key, _) = find_proving_process_program_address(
-        &metaplex_nft_packs::id(),
-        &test_pack_set.keypair.pubkey(),
-        &voucher_edition.mint.pubkey(),
-    );
-    let proving_process_data = get_account(&mut context, &proving_process_key).await;
-    let proving_process = ProvingProcess::unpack_from_slice(&proving_process_data.data).unwrap();
+    // let (proving_process_key, _) = find_proving_process_program_address(
+    //     &metaplex_nft_packs::id(),
+    //     &test_pack_set.keypair.pubkey(),
+    //     &voucher_edition.mint.pubkey(),
+    // );
+    // let proving_process_data = get_account(&mut context, &proving_process_key).await;
+    // let proving_process = ProvingProcess::unpack_from_slice(&proving_process_data.data).unwrap();
 
-    assert_eq!(proving_process.pack_set, test_pack_set.keypair.pubkey());
+    // assert_eq!(proving_process.pack_set, test_pack_set.keypair.pubkey());
 
-    // should be 1 such as we have only one card in a pack
-    assert!(proving_process.next_card_to_redeem == 1);
+    // // should be 1 such as we have only one card in a pack
+    // assert!(proving_process.next_card_to_redeem == 1);
 }
 
 #[tokio::test]

@@ -21,7 +21,7 @@ pub const PREFIX: &str = "packs";
 pub const MAX_LAG_SLOTS: u64 = 5;
 
 /// Max pack cards amount
-pub const MAX_PACK_CARDS_AMOUNT: u32 = 50;
+pub const MAX_PACK_CARDS_AMOUNT: u32 = 500;
 
 /// Max len of pack URI
 pub const MAX_URI_LENGTH: usize = 200;
