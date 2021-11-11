@@ -89,7 +89,7 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
         find_pack_card_program_address(program_id, pack_set_account.key, index);
     assert_account_key(pack_card_account, &valid_pack_card)?;
 
-    let mut pack_card = PackCard::unpack(&pack_card_account.data.borrow())?;
+    let pack_card = PackCard::unpack(&pack_card_account.data.borrow())?;
     assert_account_key(pack_set_account, &pack_card.pack_set)?;
 
     // Obtain master metadata instance
@@ -128,7 +128,7 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
         && pack_card.max_supply.error_decrement()? == 0
     {
         msg!("This card ran out of editions. It was the last one mint.");
-        pack_config.removeAt(index as usize);
+        pack_config.removeAt(index as u32);
     }
 
     if pack_set.distribution_type == PackDistributionType::MaxSupply {

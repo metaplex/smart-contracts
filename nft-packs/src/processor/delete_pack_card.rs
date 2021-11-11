@@ -1,11 +1,9 @@
 //! Delete pack card instruction processing
 
 use crate::{
-    find_pack_card_program_address, 
-    find_program_authority,
-    find_pack_config_program_address,
+    find_pack_card_program_address, find_pack_config_program_address, find_program_authority,
     math::SafeMath,
-    state::{PackCard, PackSet, PREFIX, PackConfig},
+    state::{PackCard, PackConfig, PackSet, PREFIX},
     utils::*,
 };
 use solana_program::{
@@ -49,8 +47,7 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
         find_pack_config_program_address(program_id, pack_set_account.key);
     assert_account_key(pack_config_account, &pack_config_pubkey)?;
 
-    let pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
-
+    let mut pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
 
     // Ensure that PackCard is last
     let index = pack_set.pack_cards;
@@ -68,8 +65,8 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
 
     // Decrement PackCard's counter in PackSet instance
     pack_set.pack_cards = pack_set.pack_cards.error_decrement()?;
-    pack_config.removeAt(index as usize);
-    pack_config.sort()
+    pack_config.removeAt(index as u32);
+    pack_config.sort();
 
     // Transfer PackCard tokens
     spl_token_transfer(
