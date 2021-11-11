@@ -37,6 +37,12 @@ impl PackConfig {
         self.weights.sort_by(|l, r| r.cmp(l));
     }
 
+    /// Remove a weight
+    pub fn removeAt(&mut self, index: u32) {
+        let idx = self.weights.iter().position(|x| x.0 == index);
+        idx.map(|x| self.weights.swap_remove(x));
+    }
+
     /// Select a random choice with weights
     pub fn select_weighted_random(self, rand: u16, weight_sum: u64) -> Result<u32, ProgramError> {
         let selected = self.weights.last().unwrap().0;
