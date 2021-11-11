@@ -2,9 +2,12 @@
 
 use crate::{
     error::NFTPacksError,
-    find_pack_card_program_address, find_program_authority, find_pack_config_program_address,
+    find_pack_card_program_address, find_pack_config_program_address, find_program_authority,
     math::SafeMath,
-    state::{MasterEditionHolder, PackCard, PackDistributionType, PackSet, ProvingProcess, PREFIX, PackConfig},
+    state::{
+        MasterEditionHolder, PackCard, PackConfig, PackDistributionType, PackSet, ProvingProcess,
+        PREFIX,
+    },
     utils::*,
 };
 use metaplex_token_metadata::state::{MasterEditionV2, Metadata};
@@ -55,7 +58,8 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
 
     assert_signer(&user_wallet_account)?;
 
-    let (pack_config_pubkey, _) = find_pack_config_program_address(program_id, pack_set_account.key);
+    let (pack_config_pubkey, _) =
+        find_pack_config_program_address(program_id, pack_set_account.key);
     assert_account_key(pack_config_account, &pack_config_pubkey)?;
 
     let mut pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
@@ -120,46 +124,41 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
     // set value to 0 so user can't redeem same card twice and can't redeem any card
     proving_process.next_card_to_redeem = 0;
 
-    if pack_set.distribution_type != PackDistributionType::Unlimited && pack_card.max_supply.error_decrement()? == 0 {
+    if pack_set.distribution_type != PackDistributionType::Unlimited
+        && pack_card.max_supply.error_decrement()? == 0
+    {
         msg!("This card ran out of editions. It was the last one mint.");
-        pack_config.weights.remove(&index);
+        pack_config.weights.remove(index as usize);
     }
 
     if pack_set.distribution_type == PackDistributionType::MaxSupply {
-        pack_config.weights.insert(index, pack_card.max_supply.error_decrement()?);
+        let supply = pack_card.max_supply.error_decrement()?;
+        pack_config.weights.insert(index as usize, (index, supply));
     }
 
-    let probability = get_card_probability(&mut pack_set, &mut pack_card)?;
+    pack_config.sort();
 
-    let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
+    // Mint token
+    spl_token_metadata_mint_new_edition_from_master_edition_via_token(
+        new_metadata_account,
+        new_edition_account,
+        new_mint_account,
+        new_mint_authority_account,
+        user_wallet_account,
+        program_authority_account,
+        user_token_account,
+        metadata_account,
+        master_edition_account,
+        metadata_mint_account,
+        edition_marker_account,
+        token_program_account,
+        system_program_account,
+        rent_account,
+        master_edition.supply.error_increment()?,
+        &[PREFIX.as_bytes(), program_id.as_ref(), &[bump_seed]],
+    )?;
 
-    if (random_value as u128) <= probability {
-        msg!("User get NFT");
-
-        // Mint token
-        spl_token_metadata_mint_new_edition_from_master_edition_via_token(
-            new_metadata_account,
-            new_edition_account,
-            new_mint_account,
-            new_mint_authority_account,
-            user_wallet_account,
-            program_authority_account,
-            user_token_account,
-            metadata_account,
-            master_edition_account,
-            metadata_mint_account,
-            edition_marker_account,
-            token_program_account,
-            system_program_account,
-            rent_account,
-            master_edition.supply.error_increment()?,
-            &[PREFIX.as_bytes(), program_id.as_ref(), &[bump_seed]],
-        )?;
-
-        proving_process.cards_redeemed = proving_process.cards_redeemed.error_increment()?;
-    } else {
-        msg!("User does not get NFT");
-    }
+    proving_process.cards_redeemed = proving_process.cards_redeemed.error_increment()?;
 
     // Update state
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;

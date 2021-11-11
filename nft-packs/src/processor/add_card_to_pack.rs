@@ -2,10 +2,13 @@
 
 use crate::{
     error::NFTPacksError,
-    find_pack_card_program_address, find_program_authority, find_pack_config_program_address,
+    find_pack_card_program_address, find_pack_config_program_address, find_program_authority,
     instruction::AddCardToPackArgs,
     math::SafeMath,
-    state::{InitPackCardParams, PackConfig, PackCard, PackSet, PackDistributionType, PackSetState, MAX_PACK_CARDS_AMOUNT},
+    state::{
+        InitPackCardParams, PackCard, PackConfig, PackDistributionType, PackSet, PackSetState,
+        MAX_PACK_CARDS_AMOUNT,
+    },
     utils::*,
 };
 use metaplex::state::Store;
@@ -18,10 +21,10 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
+    program_error::ProgramError,
     program_pack::Pack,
     pubkey::Pubkey,
     sysvar::{rent::Rent, Sysvar},
-    program_error::ProgramError,
 };
 use spl_token::state::Account;
 
@@ -73,20 +76,33 @@ pub fn add_card_to_pack(
         return Err(NFTPacksError::PackIsFullWithCards.into());
     }
 
-    let (pack_config_pubkey, config_bump_seed) = find_pack_config_program_address(program_id, pack_set_info.key);
+    let (pack_config_pubkey, config_bump_seed) =
+        find_pack_config_program_address(program_id, pack_set_info.key);
     assert_account_key(pack_config_info, &pack_config_pubkey)?;
 
-    let pack_config_seeds = &[PackConfig::PREFIX.as_bytes(), &pack_set_info.key.to_bytes()[..32], &[config_bump_seed]];
+    let pack_config_seeds = &[
+        PackConfig::PREFIX.as_bytes(),
+        &pack_set_info.key.to_bytes()[..32],
+        &[config_bump_seed],
+    ];
 
-    let mut pack_config = get_pack_config_data(program_id, pack_config_info, authority_info, pack_config_seeds, config_bump_seed, rent)?;
+    let mut pack_config = get_pack_config_data(
+        program_id,
+        pack_config_info,
+        authority_info,
+        pack_config_seeds,
+        config_bump_seed,
+        rent,
+    )?;
     match pack_set.distribution_type {
         PackDistributionType::MaxSupply => {
-            pack_config.weights.insert(index, max_supply);
+            pack_config.weights.push((index, max_supply));
         }
         _ => {
-            pack_config.weights.insert(index, weight as u32);
+            pack_config.weights.push((index, weight as u32));
         }
     }
+    pack_config.sort();
 
     // new pack card index
     let index = pack_set.pack_cards.error_increment()?;

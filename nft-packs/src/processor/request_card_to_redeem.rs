@@ -1,13 +1,6 @@
 //! Request card to redeem instruction processing
 
-use crate::{
-    error::NFTPacksError,
-    instruction::RequestCardToRedeemArgs,
-    math::SafeMath,
-    state::{InitProvingProcessParams, PackSet, PackConfig, PackVoucher, ProvingProcess},
-    utils::*,
-    find_pack_config_program_address,
-};
+use crate::{error::NFTPacksError, find_pack_config_program_address, instruction::RequestCardToRedeemArgs, math::SafeMath, state::{InitProvingProcessParams, PackConfig, PackDistributionType, PackSet, PackVoucher, ProvingProcess}, utils::*};
 use metaplex::state::Store;
 use metaplex_token_metadata::{
     state::{Edition, EDITION, PREFIX as EDITION_PREFIX},
@@ -56,7 +49,8 @@ pub fn request_card_for_redeem(
     assert_owned_by(voucher_account, program_id)?;
     assert_owned_by(pack_config_account, program_id)?;
 
-    let (pack_config_pubkey, _) = find_pack_config_program_address(program_id, pack_set_account.key);
+    let (pack_config_pubkey, _) =
+        find_pack_config_program_address(program_id, pack_set_account.key);
     assert_account_key(pack_config_account, &pack_config_pubkey)?;
 
     let pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
@@ -160,20 +154,13 @@ pub fn request_card_for_redeem(
     }
 
     let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
-
-    // TODO:
-    //      call new probability calculation method instead of calculation below
-    //      remove old probability calculation
-
-    let min: u32 = (1 as u32).error_add(u16::MAX as u32)?;
-    // increment pack cards to include max index
-    let max: u32 = ((pack_set.pack_cards.error_add(1)?) as u32).error_add(u16::MAX as u32)?;
-
-    // (rand * (max - min + min)) / u16::MAX
-    let next_card_to_redeem: u32 = ((random_value as u32)
-        .error_mul(max.error_sub(min)?)?
-        .error_add(min)?)
-    .error_div(u16::MAX as u32)?;
+    let next_card_to_redeem: u32 = 
+        pack_config.select_weighted_random(
+            random_value,
+            pack_set.total_weight,
+            pack_set.total_editions,
+        )?;
+    
 
     proving_process.next_card_to_redeem = next_card_to_redeem;
 
