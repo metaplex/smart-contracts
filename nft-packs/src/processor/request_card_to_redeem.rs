@@ -1,6 +1,16 @@
 //! Request card to redeem instruction processing
 
-use crate::{error::NFTPacksError, find_pack_config_program_address, instruction::RequestCardToRedeemArgs, math::SafeMath, state::{InitProvingProcessParams, PackConfig, PackDistributionType, PackSet, PackVoucher, ProvingProcess}, utils::*};
+use crate::{
+    error::NFTPacksError,
+    find_pack_config_program_address,
+    instruction::RequestCardToRedeemArgs,
+    math::SafeMath,
+    state::{
+        InitProvingProcessParams, PackConfig, PackDistributionType, PackSet, PackVoucher,
+        ProvingProcess,
+    },
+    utils::*,
+};
 use metaplex::state::Store;
 use metaplex_token_metadata::{
     state::{Edition, EDITION, PREFIX as EDITION_PREFIX},
@@ -154,13 +164,8 @@ pub fn request_card_for_redeem(
     }
 
     let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
-    let next_card_to_redeem: u32 = 
-        pack_config.select_weighted_random(
-            random_value,
-            pack_set.total_weight,
-            pack_set.total_editions,
-        )?;
-    
+    let next_card_to_redeem: u32 =
+        pack_config.select_weighted_random(random_value, pack_set.total_weight)?;
 
     proving_process.next_card_to_redeem = next_card_to_redeem;
 

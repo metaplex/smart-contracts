@@ -3,6 +3,7 @@
 use super::*;
 use crate::math::SafeMath;
 use borsh::{BorshDeserialize, BorshSerialize};
+use num_traits::ToPrimitive;
 use solana_program::{
     msg,
     program_error::ProgramError,
@@ -37,20 +38,10 @@ impl PackConfig {
     }
 
     /// Select a random choice with weights
-    pub fn select_weighted_random(
-        self,
-        rand: u16,
-        weight_sum: u64,
-        total_supply: u64,
-    ) -> Result<u32, ProgramError> {
+    pub fn select_weighted_random(self, rand: u16, weight_sum: u64) -> Result<u32, ProgramError> {
         let selected = self.weights.last().unwrap().0;
-        let bound = if total_supply != 0 {
-            (rand as u32)
-                .error_mul(weight_sum as u32)?
-                .error_div(total_supply as u32)? /// TODO I dont think this is right
-        } else {
-            /// TODO -> dont factor max supply
-        };
+        let rndp = (rand as f32) / (u16::MAX as f32);
+        let bound = (rndp * weight_sum as f32).floor().to_u32().unwrap();
         for i in self.weights {
             let sel = bound.error_sub(i.1)?;
             if sel <= 0 {
