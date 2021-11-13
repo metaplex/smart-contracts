@@ -2,8 +2,9 @@
 #![allow(missing_docs)]
 
 use crate::{
-    find_pack_card_program_address, find_pack_voucher_program_address, find_program_authority,
-    find_proving_process_program_address, find_pack_config_program_address, state::PackDistributionType,
+    find_pack_card_program_address, find_pack_config_program_address,
+    find_pack_voucher_program_address, find_program_authority,
+    find_proving_process_program_address, state::PackDistributionType,
 };
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{

@@ -3,16 +3,16 @@ use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::{program_error::ProgramError, pubkey::Pubkey};
 
 mod pack_card;
+mod pack_config;
 mod pack_set;
 mod pack_voucher;
 mod proving_process;
-mod pack_config;
 
 pub use pack_card::*;
+pub use pack_config::*;
 pub use pack_set::*;
 pub use pack_voucher::*;
 pub use proving_process::*;
-pub use pack_config::*;
 
 /// Global prefix for program addresses
 pub const PREFIX: &str = "packs";
@@ -21,7 +21,7 @@ pub const PREFIX: &str = "packs";
 pub const MAX_LAG_SLOTS: u64 = 5;
 
 /// Max pack cards amount
-pub const MAX_PACK_CARDS_AMOUNT: u32 = 50;
+pub const MAX_PACK_CARDS_AMOUNT: u32 = 100;
 
 /// Max len of pack URI
 pub const MAX_URI_LENGTH: usize = 200;

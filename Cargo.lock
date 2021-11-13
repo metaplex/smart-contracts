@@ -1430,7 +1430,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "num_enum",
- "randomness-oracle-program 0.1.0 (git+https://github.com/metaplex/randomness-oracle)",
+ "randomness-oracle-program",
  "solana-program",
  "solana-program-test",
  "solana-sdk",
@@ -1449,7 +1449,7 @@ dependencies = [
  "metaplex-token-metadata",
  "metaplex-token-vault",
  "num-traits",
- "randomness-oracle-program 0.1.0 (git+https://github.com/atticwip/randomness-oracle)",
+ "randomness-oracle-program",
  "solana-program",
  "solana-program-test",
  "solana-sdk",
@@ -1955,15 +1955,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
 dependencies = [
  "rand_core 0.5.1",
-]
-
-[[package]]
-name = "randomness-oracle-program"
-version = "0.1.0"
-source = "git+https://github.com/atticwip/randomness-oracle#a1d0b5485bc2238adb657c87ea8fe743c051e1d3"
-dependencies = [
- "borsh 0.9.1",
- "solana-program",
 ]
 
 [[package]]

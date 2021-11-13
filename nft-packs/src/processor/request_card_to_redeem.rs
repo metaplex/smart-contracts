@@ -4,11 +4,7 @@ use crate::{
     error::NFTPacksError,
     find_pack_config_program_address,
     instruction::RequestCardToRedeemArgs,
-    math::SafeMath,
-    state::{
-        InitProvingProcessParams, PackConfig, PackDistributionType, PackSet, PackVoucher,
-        ProvingProcess,
-    },
+    state::{InitProvingProcessParams, PackConfig, PackSet, PackVoucher, ProvingProcess},
     utils::*,
 };
 use metaplex::state::Store;
@@ -51,7 +47,7 @@ pub fn request_card_for_redeem(
     let rent = &Rent::from_account_info(rent_info)?;
 
     // Validate owners
-    assert_owned_by(randomness_oracle_account, &randomness_oracle_program::id())?;
+    //assert_owned_by(randomness_oracle_account, &randomness_oracle_program::id())?;
     assert_owned_by(pack_set_account, program_id)?;
     assert_owned_by(store_account, &metaplex::id())?;
     assert_owned_by(edition_mint_account, &spl_token::id())?;

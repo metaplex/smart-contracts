@@ -20,6 +20,7 @@ impl TestRandomnessOracle {
 
     pub async fn init(&self, context: &mut ProgramTestContext) -> transport::Result<()> {
         let rent = context.banks_client.get_rent().await.unwrap();
+        println!("{}", self.keypair.pubkey());
         let tx = Transaction::new_signed_with_payer(
             &[
                 system_instruction::create_account(

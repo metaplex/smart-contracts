@@ -44,11 +44,19 @@ impl PackConfig {
     /// Select a random choice with weights
     pub fn select_weighted_random(self, rand: u16, weight_sum: u64) -> Result<u32, ProgramError> {
         let selected = self.weights.last().unwrap().0;
-        let rndp = rand as f64 / u16::MAX as f64;
-        let bound = (rndp * weight_sum as f64).floor().to_u32().unwrap();
+        let mut bound = if weight_sum == 0 {
+            let max = rand / self.weights.len() as u16;
+            rand.clamp(0, max) as u32
+        } else {
+            let rndp = rand as f64 / u16::MAX as f64;
+            (rndp * weight_sum as f64).round().to_u32().unwrap()
+        };
         for i in self.weights {
-            let sel = bound.error_sub(i.1)?;
-            if sel <= 0 {
+            bound = match bound.error_sub(i.1) {
+                Ok(num) => num,
+                Err(_) => 0,
+            };
+            if bound <= 0 {
                 return Ok(i.0);
             }
         }

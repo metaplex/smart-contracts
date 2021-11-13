@@ -184,6 +184,7 @@ pub fn add_card_to_pack(
     });
 
     pack_set.add_pack_card()?;
+    pack_config.sort(); //TODO factor to a different instruction
 
     PackCard::pack(pack_card, *pack_card_info.data.borrow_mut())?;
     PackSet::pack(pack_set, *pack_set_info.data.borrow_mut())?;
