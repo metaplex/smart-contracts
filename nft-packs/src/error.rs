@@ -159,6 +159,10 @@ pub enum NFTPacksError {
     /// Pack is already full of cards
     #[error("Pack is already full of cards")]
     PackIsFullWithCards,
+
+    /// Card weights should be cleaned up
+    #[error("Card weights should be cleaned up")]
+    WeightsNotCleanedUp,
 }
 
 impl From<NFTPacksError> for ProgramError {

@@ -2,8 +2,9 @@
 
 use crate::{
     find_pack_config_program_address,
-    state::{PackConfig, CleanUpActions,},
+    state::{PackConfig, CleanUpActions, PackSet, PackDistributionType, PackSetState},
     utils::*,
+    error::NFTPacksError,
 };
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -21,7 +22,12 @@ pub fn clean_up(
     let pack_set_info = next_account_info(account_info_iter)?;
     let pack_config_info = next_account_info(account_info_iter)?;
 
-    // check if pack config is correct
+    let mut pack_set = PackSet::unpack(&pack_set_info.data.borrow_mut())?;
+
+    if pack_set.pack_state == PackSetState::NotActivated {
+        return Err(NFTPacksError::WrongPackState.into());
+    }
+
     let (pack_config_pubkey, _) =
         find_pack_config_program_address(program_id, pack_set_info.key);
     assert_account_key(pack_config_info, &pack_config_pubkey)?;
@@ -32,9 +38,19 @@ pub fn clean_up(
             if new_value == 0 {
                 pack_config.remove_at(card_index);
             } else {
-                pack_config.change(card_index, new_value)?;
+                match pack_set.distribution_type {
+                    PackDistributionType::MaxSupply => {
+                        pack_config.change_weight(card_index, new_value)?;
+                    }
+                    _ => {
+                        pack_config.change_supply(card_index, new_value)?;
+                    }
+                }
             }
 
+            pack_set.decrement_supply()?;
+
+            PackSet::pack(pack_set, *pack_set_info.data.borrow_mut())?;
             PackConfig::pack(pack_config, *pack_config_info.data.borrow_mut())?;
 
             Ok(())

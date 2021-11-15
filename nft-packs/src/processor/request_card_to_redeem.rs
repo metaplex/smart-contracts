@@ -4,8 +4,9 @@ use crate::{
     error::NFTPacksError,
     find_pack_config_program_address,
     instruction::RequestCardToRedeemArgs,
-    state::{InitProvingProcessParams, PackConfig, PackSet, PackVoucher, ProvingProcess, PackDistributionType},
+    state::{InitProvingProcessParams, PackConfig, PackSet, PackVoucher, ProvingProcess, PackDistributionType, CleanUpActions},
     utils::*,
+    math::SafeMath,
 };
 use metaplex::state::Store;
 use metaplex_token_metadata::{
@@ -60,6 +61,8 @@ pub fn request_card_for_redeem(
     assert_account_key(pack_config_account, &pack_config_pubkey)?;
 
     let mut pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
+
+    pack_config.assert_cleaned_up()?;
 
     let store = Store::from_account_info(store_account)?;
 
@@ -163,12 +166,25 @@ pub fn request_card_for_redeem(
 
     let weight_sum = if pack_set.distribution_type == PackDistributionType::MaxSupply {pack_set.total_editions} else {pack_set.total_weight};
 
-    let (next_card_to_redeem, value) =
+    let (next_card_to_redeem, value, max_supply) =
         pack_config.select_weighted_random(random_value, weight_sum)?;
 
     proving_process.next_card_to_redeem = next_card_to_redeem;
 
+    match pack_set.distribution_type {
+        PackDistributionType::MaxSupply => {
+            let new_value = value.error_decrement()?;
 
+            pack_config.action_to_do = CleanUpActions::Change(next_card_to_redeem, new_value);
+        }
+        PackDistributionType::Fixed => {
+            let new_supply = max_supply.error_decrement()?;
+            pack_config.action_to_do = CleanUpActions::Change(next_card_to_redeem, new_supply);
+        }
+        PackDistributionType::Unlimited => {
+            // do nothing because we shouldn't change any values here
+        }
+    }
 
     // Update state
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;

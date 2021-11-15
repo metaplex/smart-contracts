@@ -1,5 +1,5 @@
 //! Pack config definitions
-use crate::math::SafeMath;
+use crate::{math::SafeMath, error::NFTPacksError};
 
 use super::*;
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -47,6 +47,14 @@ impl PackConfig {
         self.action_to_do = CleanUpActions::None;
     }
 
+    /// Assert cleaned up
+    pub fn assert_cleaned_up(&mut self) -> Result<(), ProgramError> {
+        if self.action_to_do != CleanUpActions::None {
+            return Err(NFTPacksError::WeightsNotCleanedUp.into());
+        }
+        Ok(())
+    }
+
     /// Sort the weights vec
     pub fn sort(&mut self) {
         self.weights.sort_by(|a, b| b.1.cmp(&a.1));
@@ -59,12 +67,12 @@ impl PackConfig {
     }
 
     /// Change weight
-    pub fn change(&mut self, index: u32, new_value: u32) -> Result<(), ProgramError> {
+    pub fn change_weight(&mut self, index: u32, new_value: u32) -> Result<(), ProgramError> {
         // using unwrap not safe but it shouldn't panic
         // TODO: add new error
         let idx = self.weights.iter().position(|x| x.0 == index).unwrap();
         if let Some(elem) = self.weights.get_mut(idx) {
-            *elem = (elem.0, new_value);
+            *elem = (elem.0, new_value, elem.2);
         }
         if idx != self.weights.len() - 1 {
             let next_value_idx = (idx as u32).error_increment()? as usize;
@@ -77,8 +85,19 @@ impl PackConfig {
         Ok(())
     }
 
+    /// Change supply
+    pub fn change_supply(&mut self, index: u32, new_value: u32) -> Result<(), ProgramError> {
+        // using unwrap not safe but it shouldn't panic
+        // TODO: add new error
+        let idx = self.weights.iter().position(|x| x.0 == index).unwrap();
+        if let Some(elem) = self.weights.get_mut(idx) {
+            *elem = (elem.0, elem.1, new_value);
+        }
+        Ok(())
+    }
+
     /// Select a random choice with weights
-    pub fn select_weighted_random(self, rand: u16, weight_sum: u64) -> Result<(u32, u32), ProgramError> {
+    pub fn select_weighted_random(&mut self, rand: u16, weight_sum: u64) -> Result<(u32, u32, u32), ProgramError> {
         let selected = self.weights.last().unwrap();
         let mut bound = if weight_sum == 0 {
             let max = rand / self.weights.len() as u16;
@@ -87,7 +106,7 @@ impl PackConfig {
             let rndp = rand as f64 / u16::MAX as f64;
             (rndp * weight_sum as f64).round().to_u32().unwrap()
         };
-        for i in self.weights {
+        for i in self.weights.iter() {
             bound = match bound.error_sub(i.1) {
                 Ok(num) => num,
                 Err(_) => 0,

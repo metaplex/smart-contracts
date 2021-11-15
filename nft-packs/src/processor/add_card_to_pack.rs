@@ -7,7 +7,7 @@ use crate::{
     math::SafeMath,
     state::{
         InitPackCardParams, PackCard, PackConfig, PackDistributionType, PackSet, PackSetState,
-        MAX_PACK_CARDS_AMOUNT,
+        MAX_PACK_CARDS_AMOUNT, CleanUpActions,
     },
     utils::*,
 };
@@ -99,12 +99,26 @@ pub fn add_card_to_pack(
 
     match pack_set.distribution_type {
         PackDistributionType::MaxSupply => {
-            pack_config.weights.push((index, max_supply));
+            if max_supply == 0 {
+                return Err(NFTPacksError::WrongMaxSupply.into());
+            }
+
+            // set max supply to 0 because we use it as weight already
+            pack_config.weights.push((index, max_supply, 0));
         }
-        _ => {
-            pack_config.weights.push((index, weight as u32));
+        PackDistributionType::Fixed => {
+            if max_supply == 0 {
+                return Err(NFTPacksError::WrongMaxSupply.into());
+            }
+
+            pack_config.weights.push((index, weight as u32, max_supply));
+        }
+        PackDistributionType::Unlimited => {
+            pack_config.weights.push((index, weight as u32, 0));
         }
     }
+
+    pack_config.action_to_do = CleanUpActions::Sort;
 
     let (pack_card_pubkey, bump_seed) =
         find_pack_card_program_address(program_id, pack_set_info.key, index);
