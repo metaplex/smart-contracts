@@ -93,6 +93,10 @@ pub fn add_card_to_pack(
         config_bump_seed,
         rent,
     )?;
+
+    // new pack card index
+    let index = pack_set.pack_cards.error_increment()?;
+
     match pack_set.distribution_type {
         PackDistributionType::MaxSupply => {
             pack_config.weights.push((index, max_supply));
@@ -101,10 +105,6 @@ pub fn add_card_to_pack(
             pack_config.weights.push((index, weight as u32));
         }
     }
-    pack_config.sort();
-
-    // new pack card index
-    let index = pack_set.pack_cards.error_increment()?;
 
     let (pack_card_pubkey, bump_seed) =
         find_pack_card_program_address(program_id, pack_set_info.key, index);
@@ -184,7 +184,6 @@ pub fn add_card_to_pack(
     });
 
     pack_set.add_pack_card()?;
-    pack_config.sort(); //TODO factor to a different instruction
 
     PackCard::pack(pack_card, *pack_card_info.data.borrow_mut())?;
     PackSet::pack(pack_set, *pack_set_info.data.borrow_mut())?;

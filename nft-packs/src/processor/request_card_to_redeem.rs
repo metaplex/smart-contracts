@@ -4,7 +4,7 @@ use crate::{
     error::NFTPacksError,
     find_pack_config_program_address,
     instruction::RequestCardToRedeemArgs,
-    state::{InitProvingProcessParams, PackConfig, PackSet, PackVoucher, ProvingProcess},
+    state::{InitProvingProcessParams, PackConfig, PackSet, PackVoucher, ProvingProcess, PackDistributionType},
     utils::*,
 };
 use metaplex::state::Store;
@@ -47,7 +47,7 @@ pub fn request_card_for_redeem(
     let rent = &Rent::from_account_info(rent_info)?;
 
     // Validate owners
-    //assert_owned_by(randomness_oracle_account, &randomness_oracle_program::id())?;
+    assert_owned_by(randomness_oracle_account, &randomness_oracle_program::id())?;
     assert_owned_by(pack_set_account, program_id)?;
     assert_owned_by(store_account, &metaplex::id())?;
     assert_owned_by(edition_mint_account, &spl_token::id())?;
@@ -59,7 +59,7 @@ pub fn request_card_for_redeem(
         find_pack_config_program_address(program_id, pack_set_account.key);
     assert_account_key(pack_config_account, &pack_config_pubkey)?;
 
-    let pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
+    let mut pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
 
     let store = Store::from_account_info(store_account)?;
 
@@ -160,10 +160,15 @@ pub fn request_card_for_redeem(
     }
 
     let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
-    let next_card_to_redeem: u32 =
-        pack_config.select_weighted_random(random_value, pack_set.total_weight)?;
+
+    let weight_sum = if pack_set.distribution_type == PackDistributionType::MaxSupply {pack_set.total_editions} else {pack_set.total_weight};
+
+    let (next_card_to_redeem, value) =
+        pack_config.select_weighted_random(random_value, weight_sum)?;
 
     proving_process.next_card_to_redeem = next_card_to_redeem;
+
+
 
     // Update state
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;

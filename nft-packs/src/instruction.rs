@@ -268,7 +268,7 @@ pub enum NFTPacksInstruction {
     ///
     /// Accounts:
     /// - read                     pack_set
-    /// - read                     pack_config (PDA, ['config', pack])
+    /// - read, write              pack_config (PDA, ['config', pack])
     /// - read                     store
     /// - read                     edition
     /// - read                     edition_mint
@@ -284,6 +284,15 @@ pub enum NFTPacksInstruction {
     /// Parameters:
     /// - index    u32
     RequestCardForRedeem(RequestCardToRedeemArgs),
+
+    /// CleanUp
+    /// 
+    /// Sorts weights of all the cards and removes exhausted
+    /// 
+    /// Accounts:
+    /// - read                     pack_set
+    /// - read, write              pack_config (PDA, ['config', pack])
+    CleanUp,
 }
 
 /// Create `InitPack` instruction
@@ -607,7 +616,7 @@ pub fn request_card_for_redeem(
 
     let accounts = vec![
         AccountMeta::new(*pack_set, false),
-        AccountMeta::new_readonly(pack_config, false),
+        AccountMeta::new(pack_config, false),
         AccountMeta::new_readonly(*store, false),
         AccountMeta::new_readonly(*edition, false),
         AccountMeta::new_readonly(*edition_mint, false),
@@ -624,6 +633,26 @@ pub fn request_card_for_redeem(
     Instruction::new_with_borsh(
         *program_id,
         &NFTPacksInstruction::RequestCardForRedeem(RequestCardToRedeemArgs { index }),
+        accounts,
+    )
+}
+
+/// Create `CleanUp` instruction
+#[allow(clippy::too_many_arguments)]
+pub fn clean_up(
+    program_id: &Pubkey,
+    pack_set: &Pubkey,
+) -> Instruction {
+    let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
+
+    let accounts = vec![
+        AccountMeta::new_readonly(*pack_set, false),
+        AccountMeta::new(pack_config, false),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &NFTPacksInstruction::CleanUp,
         accounts,
     )
 }

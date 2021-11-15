@@ -15,6 +15,7 @@ use delete_pack_voucher::delete_pack_voucher;
 use edit_pack::edit_pack;
 use init_pack::init_pack;
 use request_card_to_redeem::request_card_for_redeem;
+use clean_up::clean_up;
 use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey};
 
 pub mod activate;
@@ -30,6 +31,7 @@ pub mod delete_pack_voucher;
 pub mod edit_pack;
 pub mod init_pack;
 pub mod request_card_to_redeem;
+pub mod clean_up;
 
 /// Program state handler.
 pub struct Processor {}
@@ -93,6 +95,10 @@ impl Processor {
             NFTPacksInstruction::RequestCardForRedeem(args) => {
                 msg!("Instruction: RequestCardForRedeem");
                 request_card_for_redeem(program_id, accounts, args)
+            }
+            NFTPacksInstruction::CleanUp => {
+                msg!("Instruction: CleanUp");
+                clean_up(program_id, accounts)
             }
         }
     }
