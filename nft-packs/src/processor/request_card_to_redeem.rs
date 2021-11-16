@@ -64,7 +64,7 @@ pub fn request_card_for_redeem(
         find_pack_config_program_address(program_id, pack_set_account.key);
     assert_account_key(pack_config_account, &pack_config_pubkey)?;
 
-    let mut pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
+    let mut pack_config = PackConfig::unpack(&pack_config_account.data.borrow_mut())?;
 
     pack_config.assert_cleaned_up()?;
 
@@ -192,11 +192,12 @@ pub fn request_card_for_redeem(
             // do nothing because we shouldn't change any values here
         }
     }
+    msg!("Cleanup Action {:?}", pack_config.action_to_do);
 
     // Update state
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;
     PackConfig::pack(pack_config, *pack_config_account.data.borrow_mut())?;
-    
+
     Ok(())
 }
 

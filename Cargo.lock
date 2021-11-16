@@ -1449,6 +1449,7 @@ dependencies = [
  "metaplex-token-metadata",
  "metaplex-token-vault",
  "num-traits",
+ "rand 0.8.4",
  "randomness-oracle-program",
  "solana-program",
  "solana-program-test",

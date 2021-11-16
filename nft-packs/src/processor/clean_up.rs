@@ -28,8 +28,8 @@ pub fn clean_up(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult 
 
     let (pack_config_pubkey, _) = find_pack_config_program_address(program_id, pack_set_info.key);
     assert_account_key(pack_config_info, &pack_config_pubkey)?;
-    let mut pack_config = PackConfig::unpack(&pack_config_info.data.borrow())?;
-
+    let mut pack_config = PackConfig::unpack(&pack_config_info.data.borrow_mut())?;
+    msg!("vadim Cleanup Action {:?}", pack_config.action_to_do);
     match pack_config.action_to_do {
         CleanUpActions::Change(card_index, new_value) => {
             if new_value == 0 {
