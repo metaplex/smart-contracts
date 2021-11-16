@@ -15,6 +15,7 @@ metaplex-token-vault = { git = "https://github.com/metaplex-foundation/metaplex"
 metaplex-token-metadata = { git = "https://github.com/metaplex-foundation/metaplex", features = [ "no-entrypoint" ] }
 randomness-oracle-program = { git = "https://github.com/metaplex/randomness-oracle", features = [ "no-entrypoint" ] }
 metaplex-nft-packs = { path = "../nft-packs", features = [ "no-entrypoint" ] }
+rand = { version="0.8.4" }
 
 [dev-dependencies]
 num-traits = "0.2.14"

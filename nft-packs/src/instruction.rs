@@ -650,7 +650,7 @@ pub fn clean_up(
     let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
 
     let accounts = vec![
-        AccountMeta::new_readonly(*pack_set, false),
+        AccountMeta::new(*pack_set, false),
         AccountMeta::new(pack_config, false),
     ];
 

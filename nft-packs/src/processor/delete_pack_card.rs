@@ -12,13 +12,13 @@ use solana_program::{
     entrypoint::ProgramResult,
     program_pack::Pack,
     pubkey::Pubkey,
+    msg,
 };
 
 /// Process DeletePackCard instruction
 pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let pack_set_account = next_account_info(account_info_iter)?;
-    let pack_config_account = next_account_info(account_info_iter)?;
     let pack_card_account = next_account_info(account_info_iter)?;
     let authority_account = next_account_info(account_info_iter)?;
     let refunder_account = next_account_info(account_info_iter)?;
@@ -39,16 +39,9 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
     let mut pack_set = PackSet::unpack(&pack_set_account.data.borrow_mut())?;
     assert_account_key(authority_account, &pack_set.authority)?;
 
+    msg!("Pack state: {:?}", pack_set.pack_state);
+
     pack_set.assert_ended()?;
-
-    //Pack Config
-    assert_owned_by(pack_config_account, program_id)?;
-
-    let (pack_config_pubkey, _) =
-        find_pack_config_program_address(program_id, pack_set_account.key);
-    assert_account_key(pack_config_account, &pack_config_pubkey)?;
-
-    let mut pack_config = PackConfig::unpack(&pack_config_account.data.borrow())?;
 
     // Ensure that PackCard is last
     let index = pack_set.pack_cards;
@@ -71,8 +64,6 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
 
     // Decrement PackCard's counter in PackSet instance
     pack_set.pack_cards = pack_set.pack_cards.error_decrement()?;
-    pack_config.remove_at(index as u32);
-    pack_config.sort();
 
     // Transfer PackCard tokens
     spl_token_transfer(
@@ -88,6 +79,5 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
 
     // Update state
     PackSet::pack(pack_set, *pack_set_account.data.borrow_mut())?;
-    PackConfig::pack(pack_config, *pack_config_account.data.borrow_mut())?;
     Ok(())
 }

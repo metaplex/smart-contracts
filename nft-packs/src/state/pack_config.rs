@@ -117,6 +117,24 @@ impl PackConfig {
         }
         return Ok(selected.clone());
     }
+
+    // /// Select a random choice with weights
+    // pub fn select_weighted_random(&mut self, rand: u16, weight_sum: u64) -> Result<(u32, u32, u32), ProgramError> {
+    //     let selected = self.weights.last().unwrap();
+    //     // u16::MAX it's max random value
+    //     // TODO: make it as const
+    //     // cast rand value to range 0..weight_sum
+    //     let mut target = (rand as u64).error_mul(weight_sum)?.error_div(u16::MAX as u64)?;
+
+    //     for el in self.weights.iter() {
+    //         if target <= el.1 as u64 {
+    //             return Ok(el.clone());
+    //         }
+    //         target = target.error_sub(el.1 as u64)?;
+    //     }
+
+    //     Ok(selected.clone())
+    // }
 }
 
 impl Sealed for PackConfig {}

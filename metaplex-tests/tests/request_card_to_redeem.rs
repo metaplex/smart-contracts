@@ -153,10 +153,10 @@ async fn success() {
 
     test_pack_set.activate(&mut context).await.unwrap();
     test_pack_set.clean_up(&mut context).await.unwrap();
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle
-        .update(&mut context, [1u8; 32])
+        .update(&mut context)
         .await
         .unwrap();
 
@@ -311,10 +311,10 @@ async fn success_two_cards() {
 
     test_pack_set.activate(&mut context).await.unwrap();
     test_pack_set.clean_up(&mut context).await.unwrap();
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle
-        .update(&mut context, [1u8; 32])
+        .update(&mut context)
         .await
         .unwrap();
 
@@ -342,7 +342,7 @@ async fn success_two_cards() {
 
     assert_eq!(proving_process.pack_set, test_pack_set.keypair.pubkey());
 
-    assert!(proving_process.next_card_to_redeem > 1);
+    assert!(proving_process.next_card_to_redeem > 0);
 
     println!(
         "Chosen card index: {:?}",
@@ -453,10 +453,10 @@ async fn fail_request_twice() {
 
     test_pack_set.activate(&mut context).await.unwrap();
     test_pack_set.clean_up(&mut context).await.unwrap();
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle
-        .update(&mut context, [1u8; 32])
+        .update(&mut context)
         .await
         .unwrap();
 
@@ -476,6 +476,8 @@ async fn fail_request_twice() {
 
     // do wrap to update state
     context.warp_to_slot(5).unwrap();
+
+    test_pack_set.clean_up(&mut context).await.unwrap();
 
     let result = test_pack_set
         .request_card_for_redeem(

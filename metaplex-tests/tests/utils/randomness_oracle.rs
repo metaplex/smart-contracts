@@ -4,21 +4,25 @@ use solana_sdk::{
     program_pack::Pack, signature::Keypair, signer::Signer, system_instruction,
     transaction::Transaction, transport,
 };
+use rand::prelude::*;
 
 use super::get_account;
 
 pub struct TestRandomnessOracle {
     pub keypair: Keypair,
+    pub rand: ThreadRng,
 }
 
 impl TestRandomnessOracle {
     pub fn new() -> Self {
+        let mut rng = rand::thread_rng();
         TestRandomnessOracle {
             keypair: Keypair::new(),
+            rand: rng,
         }
     }
 
-    pub async fn init(&self, context: &mut ProgramTestContext) -> transport::Result<()> {
+    pub async fn init(&mut self, context: &mut ProgramTestContext) -> transport::Result<()> {
         let rent = context.banks_client.get_rent().await.unwrap();
         println!("{}", self.keypair.pubkey());
         let tx = Transaction::new_signed_with_payer(
@@ -45,10 +49,10 @@ impl TestRandomnessOracle {
     }
 
     pub async fn update(
-        &self,
+        &mut self,
         context: &mut ProgramTestContext,
-        value: [u8; 32],
     ) -> transport::Result<()> {
+        let value: [u8; 32] = self.rand.gen();
         let tx = Transaction::new_signed_with_payer(
             &[instruction::update_randomness_oracle(
                 &id(),
@@ -64,7 +68,7 @@ impl TestRandomnessOracle {
         context.banks_client.process_transaction(tx).await
     }
 
-    pub async fn get_data(&self, context: &mut ProgramTestContext) -> RandomnessOracle {
+    pub async fn get_data(&mut self, context: &mut ProgramTestContext) -> RandomnessOracle {
         let account = get_account(context, &self.keypair.pubkey()).await;
         RandomnessOracle::unpack_unchecked(&account.data).unwrap()
     }
