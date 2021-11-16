@@ -20,7 +20,6 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
-    msg,
     program_error::ProgramError,
     program_option::COption,
     program_pack::Pack,
@@ -192,7 +191,6 @@ pub fn request_card_for_redeem(
             // do nothing because we shouldn't change any values here
         }
     }
-    msg!("Cleanup Action {:?}", pack_config.action_to_do);
 
     // Update state
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;

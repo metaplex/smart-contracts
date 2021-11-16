@@ -9,7 +9,6 @@ use crate::{
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    msg,
     program_pack::Pack,
     pubkey::Pubkey,
 };
@@ -29,7 +28,6 @@ pub fn clean_up(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult 
     let (pack_config_pubkey, _) = find_pack_config_program_address(program_id, pack_set_info.key);
     assert_account_key(pack_config_info, &pack_config_pubkey)?;
     let mut pack_config = PackConfig::unpack(&pack_config_info.data.borrow_mut())?;
-    msg!("vadim Cleanup Action {:?}", pack_config.action_to_do);
     match pack_config.action_to_do {
         CleanUpActions::Change(card_index, new_value) => {
             if new_value == 0 {
@@ -44,9 +42,7 @@ pub fn clean_up(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult 
                     }
                 }
             }
-            msg!("supply before {}", pack_set.total_editions);
             pack_set.decrement_supply()?;
-            msg!("supply {}", pack_set.total_editions);
             pack_config.action_to_do = CleanUpActions::None;
             PackSet::pack(pack_set, *pack_set_info.data.borrow_mut())?;
             PackConfig::pack(pack_config, *pack_config_info.data.borrow_mut())?;
