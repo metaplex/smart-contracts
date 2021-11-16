@@ -310,7 +310,7 @@ async fn success_two_cards() {
         .unwrap();
 
     test_pack_set.activate(&mut context).await.unwrap();
-
+    test_pack_set.clean_up(&mut context).await.unwrap();
     let test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle
@@ -452,7 +452,7 @@ async fn fail_request_twice() {
         .unwrap();
 
     test_pack_set.activate(&mut context).await.unwrap();
-
+    test_pack_set.clean_up(&mut context).await.unwrap();
     let test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle
