@@ -1,11 +1,11 @@
 //! Delete pack card instruction processing
 
 use crate::{
+    error::NFTPacksError,
     find_pack_card_program_address, find_pack_config_program_address, find_program_authority,
     math::SafeMath,
     state::{PackCard, PackConfig, PackSet, PREFIX},
     utils::*,
-    error::NFTPacksError,
 };
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -88,6 +88,6 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
 
     // Update state
     PackSet::pack(pack_set, *pack_set_account.data.borrow_mut())?;
-
+    PackConfig::pack(pack_config, *pack_config_account.data.borrow_mut())?;
     Ok(())
 }

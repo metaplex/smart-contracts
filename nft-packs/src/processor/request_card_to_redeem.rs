@@ -4,9 +4,12 @@ use crate::{
     error::NFTPacksError,
     find_pack_config_program_address,
     instruction::RequestCardToRedeemArgs,
-    state::{InitProvingProcessParams, PackConfig, PackSet, PackVoucher, ProvingProcess, PackDistributionType, CleanUpActions},
-    utils::*,
     math::SafeMath,
+    state::{
+        CleanUpActions, InitProvingProcessParams, PackConfig, PackDistributionType, PackSet,
+        PackVoucher, ProvingProcess,
+    },
+    utils::*,
 };
 use metaplex::state::Store;
 use metaplex_token_metadata::{
@@ -17,6 +20,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
+    msg,
     program_error::ProgramError,
     program_option::COption,
     program_pack::Pack,
@@ -164,7 +168,11 @@ pub fn request_card_for_redeem(
 
     let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
 
-    let weight_sum = if pack_set.distribution_type == PackDistributionType::MaxSupply {pack_set.total_editions} else {pack_set.total_weight};
+    let weight_sum = if pack_set.distribution_type == PackDistributionType::MaxSupply {
+        pack_set.total_editions
+    } else {
+        pack_set.total_weight
+    };
 
     let (next_card_to_redeem, value, max_supply) =
         pack_config.select_weighted_random(random_value, weight_sum)?;
@@ -174,7 +182,6 @@ pub fn request_card_for_redeem(
     match pack_set.distribution_type {
         PackDistributionType::MaxSupply => {
             let new_value = value.error_decrement()?;
-
             pack_config.action_to_do = CleanUpActions::Change(next_card_to_redeem, new_value);
         }
         PackDistributionType::Fixed => {
@@ -188,7 +195,8 @@ pub fn request_card_for_redeem(
 
     // Update state
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;
-
+    PackConfig::pack(pack_config, *pack_config_account.data.borrow_mut())?;
+    
     Ok(())
 }
 

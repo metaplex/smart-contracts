@@ -9,6 +9,7 @@ use crate::{
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
+    msg,
     program_pack::Pack,
     pubkey::Pubkey,
 };
@@ -43,8 +44,9 @@ pub fn clean_up(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult 
                     }
                 }
             }
-
+            msg!("supply before {}", pack_set.total_editions);
             pack_set.decrement_supply()?;
+            msg!("supply {}", pack_set.total_editions);
             pack_config.action_to_do = CleanUpActions::None;
             PackSet::pack(pack_set, *pack_set_info.data.borrow_mut())?;
             PackConfig::pack(pack_config, *pack_config_info.data.borrow_mut())?;

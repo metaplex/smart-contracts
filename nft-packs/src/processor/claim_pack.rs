@@ -4,10 +4,7 @@ use crate::{
     error::NFTPacksError,
     find_pack_card_program_address, find_program_authority,
     math::SafeMath,
-    state::{
-        PackCard, PackDistributionType, PackSet, ProvingProcess,
-        PREFIX,
-    },
+    state::{PackCard, PackDistributionType, PackSet, ProvingProcess, PREFIX},
     utils::*,
 };
 use metaplex_token_metadata::state::{MasterEditionV2, Metadata};
