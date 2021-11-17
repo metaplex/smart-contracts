@@ -3,7 +3,7 @@ mod utils;
 use metaplex_nft_packs::{
     error::NFTPacksError,
     find_pack_card_program_address, find_program_authority, find_proving_process_program_address,
-    instruction::{claim_pack, AddCardToPackArgs, InitPackSetArgs, NFTPacksInstruction},
+    instruction::{claim_pack, AddCardToPackArgs, InitPackSetArgs, NFTPacksInstruction, ClaimPackArgs},
     state::{PackDistributionType, ProvingProcess},
 };
 use num_traits::FromPrimitive;
@@ -216,8 +216,7 @@ async fn success_fixed_probability() {
 
     let card_master_edition = card_master_edition.get_data(&mut context).await;
 
-    assert_eq!(proving_process.cards_redeemed, 1);
-    assert_eq!(proving_process.next_card_to_redeem, 0);
+    assert_eq!(proving_process.cards_to_redeem.len(), 1);
     assert_eq!(card_master_edition.supply, 1);
 
     let pack_set = test_pack_set.get_data(&mut context).await;
@@ -382,8 +381,7 @@ async fn success_max_supply_probability() {
 
     let card_master_edition = card_master_edition.get_data(&mut context).await;
 
-    assert_eq!(proving_process.cards_redeemed, 1);
-    assert_eq!(proving_process.next_card_to_redeem, 0);
+    assert_eq!(proving_process.cards_to_redeem.len(), 1);
     assert_eq!(card_master_edition.supply, 1);
 }
 
@@ -615,7 +613,7 @@ async fn fail_wrong_user_wallet() {
     let tx = Transaction::new_signed_with_payer(
         &[Instruction::new_with_borsh(
             metaplex_nft_packs::id(),
-            &NFTPacksInstruction::ClaimPack,
+            &NFTPacksInstruction::ClaimPack(ClaimPackArgs{index: 1}),  // set index to 1 because we added only one card to pack
             accounts,
         )],
         Some(&context.payer.pubkey()),

@@ -31,9 +31,6 @@ impl ProvingProcess {
     /// Amount of tokens for prove operation
     pub const TOKEN_AMOUNT: u64 = 1;
 
-    /// One BTreeMap element len
-    pub const ONE_ELEMENT_LEN: usize = 5;
-
     /// Initialize a ProvingProcess
     pub fn init(&mut self, params: InitProvingProcessParams) {
         self.account_type = AccountType::ProvingProcess;
@@ -54,9 +51,9 @@ pub struct InitProvingProcessParams {
 impl Sealed for ProvingProcess {}
 
 impl Pack for ProvingProcess {
-    // 1 + 32 + 32 + BTreeMap size
-    // base account len without BTreeMap such as it's dynamic size
-    const LEN: usize = 65;
+    // 1 + 32 + 32 + BTreeMap size for 100 cards(500)
+    // create account for max pack size
+    const LEN: usize = 565;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
