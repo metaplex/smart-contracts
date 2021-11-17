@@ -3,6 +3,7 @@
 use crate::{
     error::NFTPacksError,
     find_pack_card_program_address, find_program_authority,
+    instruction::ClaimPackArgs,
     math::SafeMath,
     state::{PackCard, PackDistributionType, PackSet, ProvingProcess, PREFIX},
     utils::*,
@@ -19,7 +20,11 @@ use solana_program::{
 use spl_token::state::Account;
 
 /// Process ClaimPack instruction
-pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+pub fn claim_pack(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    args: ClaimPackArgs,
+) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let pack_set_account = next_account_info(account_info_iter)?;
     let proving_process_account = next_account_info(account_info_iter)?;
@@ -51,7 +56,7 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
 
     let pack_set = PackSet::unpack(&pack_set_account.data.borrow())?;
     let mut proving_process = ProvingProcess::unpack(&proving_process_account.data.borrow_mut())?;
-    let index = proving_process.next_card_to_redeem;
+    let ClaimPackArgs { index } = args;
 
     assert_account_key(pack_set_account, &proving_process.pack_set)?;
 
@@ -88,12 +93,15 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
     let (program_authority_key, bump_seed) = find_program_authority(program_id);
     assert_account_key(program_authority_account, &program_authority_key)?;
 
-    if proving_process.cards_redeemed == pack_set.allowed_amount_to_redeem {
-        return Err(NFTPacksError::UserRedeemedAllCards.into());
+    if let Some(card_redeemed) = proving_process.cards_to_redeem.get_mut(&index) {
+        if *card_redeemed {
+            return Err(NFTPacksError::CardAlreadyRedeemed.into());
+        }
+        // set true means card is already redeemed
+        *card_redeemed = true;
+    } else {
+        return Err(NFTPacksError::UserCantRedeemThisCard.into());
     }
-
-    // set value to 0 so user can't redeem same card twice and can't redeem any card
-    proving_process.next_card_to_redeem = 0;
 
     if pack_set.distribution_type != PackDistributionType::Unlimited {
         pack_card.decrement_supply()?;
@@ -118,8 +126,6 @@ pub fn claim_pack(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResul
         master_edition.supply.error_increment()?,
         &[PREFIX.as_bytes(), program_id.as_ref(), &[bump_seed]],
     )?;
-
-    proving_process.cards_redeemed = proving_process.cards_redeemed.error_increment()?;
 
     // Update state
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;

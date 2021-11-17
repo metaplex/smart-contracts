@@ -20,10 +20,12 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     clock::Clock,
     entrypoint::ProgramResult,
+    program::invoke_signed,
     program_error::ProgramError,
     program_option::COption,
     program_pack::Pack,
     pubkey::Pubkey,
+    system_instruction,
     sysvar::{rent::Rent, Sysvar},
 };
 use spl_token::state::Account;
@@ -88,6 +90,7 @@ pub fn request_card_for_redeem(
         user_wallet_account,
         edition_mint_account,
         pack_set_account.key,
+        pack_set.allowed_amount_to_redeem,
         proving_process_seeds,
         bump_seed,
         rent,
@@ -144,11 +147,6 @@ pub fn request_card_for_redeem(
 
     pack_set.assert_activated()?;
 
-    // check if user already got index card
-    if proving_process.next_card_to_redeem != 0 {
-        return Err(NFTPacksError::AlreadySetNextCardToRedeem.into());
-    }
-
     let current_timestamp = clock.unix_timestamp as u64;
 
     if current_timestamp < pack_set.redeem_start_date {
@@ -161,7 +159,8 @@ pub fn request_card_for_redeem(
         }
     }
 
-    if proving_process.cards_redeemed == pack_set.allowed_amount_to_redeem {
+    // check if user already get all the card indexes
+    if (proving_process.cards_to_redeem.len() as u32) == pack_set.allowed_amount_to_redeem {
         return Err(NFTPacksError::UserRedeemedAllCards.into());
     }
 
@@ -176,7 +175,10 @@ pub fn request_card_for_redeem(
     let (next_card_to_redeem, value, max_supply) =
         pack_config.select_weighted_random(random_value, weight_sum)?;
 
-    proving_process.next_card_to_redeem = next_card_to_redeem;
+    // set false means card isn't redeemed yet
+    proving_process
+        .cards_to_redeem
+        .insert(next_card_to_redeem, false);
 
     match pack_set.distribution_type {
         PackDistributionType::MaxSupply => {
@@ -206,6 +208,7 @@ pub fn get_proving_process_data<'a>(
     user_wallet: &AccountInfo<'a>,
     voucher_mint: &AccountInfo<'a>,
     pack_set: &Pubkey,
+    allowed_amount_to_redeem: u32,
     signers_seeds: &[&[u8]],
     bump_seed: u8,
     rent: &Rent,
@@ -215,12 +218,23 @@ pub fn get_proving_process_data<'a>(
     let proving_process = match unpack {
         Ok(data) => Ok(data),
         Err(_) => {
-            create_account::<ProvingProcess>(
+            let account_len = (ProvingProcess::LEN as u64).error_add(
+                (ProvingProcess::ONE_ELEMENT_LEN as u64)
+                    .error_mul(allowed_amount_to_redeem as u64)?,
+            )? as usize;
+
+            let ix = system_instruction::create_account(
+                user_wallet.key,
+                account_info.key,
+                rent.minimum_balance(account_len),
+                account_len as u64,
                 program_id,
-                user_wallet.clone(),
-                account_info.clone(),
+            );
+
+            invoke_signed(
+                &ix,
+                &[user_wallet.clone(), account_info.clone()],
                 &[&[signers_seeds, &[&[bump_seed]]].concat()],
-                rent,
             )?;
 
             let mut data = ProvingProcess::unpack_unchecked(&account_info.data.borrow_mut())?;

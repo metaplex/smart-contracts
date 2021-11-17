@@ -60,6 +60,14 @@ pub struct EditPackSetArgs {
     pub mutable: Option<bool>,
 }
 
+/// Claim card from pack
+#[repr(C)]
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
+pub struct ClaimPackArgs {
+    /// Card index
+    pub index: u32,
+}
+
 /// Request card to redeem arguments
 #[repr(C)]
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
@@ -194,7 +202,10 @@ pub enum NFTPacksInstruction {
     /// - read              metaplex_token_metadata program
     /// - read              spl_token program
     /// - read              system program
-    ClaimPack,
+    /// 
+    /// Parameters:
+    /// - index             u32
+    ClaimPack(ClaimPackArgs),
 
     /// TransferPackAuthority
     ///
@@ -283,18 +294,18 @@ pub enum NFTPacksInstruction {
     RequestCardForRedeem(RequestCardToRedeemArgs),
 
     /// CleanUp
-    /// 
+    ///
     /// Sorts weights of all the cards and removes exhausted
-    /// 
+    ///
     /// Accounts:
     /// - read                     pack_set
     /// - read, write              pack_config (PDA, ['config', pack])
     CleanUp,
 
     /// Delete PackConfig account
-    /// 
+    ///
     /// Transfer all the SOL from pack card account to refunder account and thus remove it.
-    /// 
+    ///
     /// Accounts:
     /// - read                pack_set
     /// - write               pack_config (PDA, ['config', pack])
@@ -495,7 +506,11 @@ pub fn claim_pack(
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 
-    Instruction::new_with_borsh(*program_id, &NFTPacksInstruction::ClaimPack, accounts)
+    Instruction::new_with_borsh(
+        *program_id,
+        &NFTPacksInstruction::ClaimPack(ClaimPackArgs { index }),
+        accounts,
+    )
 }
 
 /// Create `TransferPackAuthority` instruction
@@ -643,10 +658,7 @@ pub fn request_card_for_redeem(
 
 /// Create `CleanUp` instruction
 #[allow(clippy::too_many_arguments)]
-pub fn clean_up(
-    program_id: &Pubkey,
-    pack_set: &Pubkey,
-) -> Instruction {
+pub fn clean_up(program_id: &Pubkey, pack_set: &Pubkey) -> Instruction {
     let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
 
     let accounts = vec![
@@ -654,11 +666,7 @@ pub fn clean_up(
         AccountMeta::new(pack_config, false),
     ];
 
-    Instruction::new_with_borsh(
-        *program_id,
-        &NFTPacksInstruction::CleanUp,
-        accounts,
-    )
+    Instruction::new_with_borsh(*program_id, &NFTPacksInstruction::CleanUp, accounts)
 }
 
 /// Create `DeletePackConfig` instruction
@@ -677,5 +685,9 @@ pub fn delete_pack_config(
         AccountMeta::new_readonly(*authority, true),
     ];
 
-    Instruction::new_with_borsh(*program_id, &NFTPacksInstruction::DeletePackConfig, accounts)
+    Instruction::new_with_borsh(
+        *program_id,
+        &NFTPacksInstruction::DeletePackConfig,
+        accounts,
+    )
 }

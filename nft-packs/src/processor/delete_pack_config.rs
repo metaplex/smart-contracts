@@ -1,6 +1,6 @@
 //! DeletePackConfig instruction processing
 
-use crate::{error::NFTPacksError, state::PackSet, utils::*, find_pack_config_program_address};
+use crate::{error::NFTPacksError, find_pack_config_program_address, state::PackSet, utils::*};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,

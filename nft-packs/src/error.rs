@@ -163,6 +163,14 @@ pub enum NFTPacksError {
     /// Card weights should be cleaned up
     #[error("Card weights should be cleaned up")]
     WeightsNotCleanedUp,
+
+    /// User already redeemed this card
+    #[error("User already redeemed this card")]
+    CardAlreadyRedeemed,
+
+    /// User can't redeem this card
+    #[error("User can't redeem this card")]
+    UserCantRedeemThisCard,
 }
 
 impl From<NFTPacksError> for ProgramError {

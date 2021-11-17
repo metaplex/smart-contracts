@@ -6,8 +6,8 @@ use crate::{
     instruction::AddCardToPackArgs,
     math::SafeMath,
     state::{
-        InitPackCardParams, PackCard, PackConfig, PackDistributionType, PackSet, PackSetState,
-        MAX_PACK_CARDS_AMOUNT, CleanUpActions,
+        CleanUpActions, InitPackCardParams, PackCard, PackConfig, PackDistributionType, PackSet,
+        PackSetState, MAX_PACK_CARDS_AMOUNT,
     },
     utils::*,
 };
