@@ -1,9 +1,10 @@
 //! Delete pack card instruction processing
 
 use crate::{
+    error::NFTPacksError,
     find_pack_card_program_address, find_program_authority,
     math::SafeMath,
-    state::{PackCard, PackSet, PREFIX},
+    state::{PackCard, PackSet, PackSetState, PREFIX},
     utils::*,
 };
 use solana_program::{
@@ -37,9 +38,15 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
     let mut pack_set = PackSet::unpack(&pack_set_account.data.borrow_mut())?;
     assert_account_key(authority_account, &pack_set.authority)?;
 
-    pack_set.assert_ended()?;
+    // Ensure, that PackSet is in correct state
+    // Only PackSetState::Ended or PackSetState::NotActivated is allowed
+    if pack_set.pack_state != PackSetState::Ended
+        && pack_set.pack_state != PackSetState::NotActivated
+    {
+        return Err(NFTPacksError::WrongPackState.into());
+    }
 
-    // Ensure that PackCard is last
+    // Ensure, that PackCard is last
     let index = pack_set.pack_cards;
     let (last_pack_card, _) =
         find_pack_card_program_address(program_id, pack_set_account.key, index);
