@@ -1,4 +1,7 @@
+# Env
 .env
 .vscode
 .DS_Store
 target/
+*.so
+*.lock
