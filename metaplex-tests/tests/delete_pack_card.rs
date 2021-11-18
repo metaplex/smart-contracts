@@ -49,7 +49,7 @@ async fn setup() -> (
                 uri: uri.clone(),
                 description: description.clone(),
                 mutable: true,
-                distribution_type: PackDistributionType::Fixed,
+                distribution_type: PackDistributionType::Unlimited,
                 allowed_amount_to_redeem: 10,
                 redeem_start_date,
                 redeem_end_date,
@@ -83,7 +83,7 @@ async fn setup() -> (
         .unwrap();
 
     test_master_edition
-        .create(&mut context, Some(10))
+        .create(&mut context, None)
         .await
         .unwrap();
 
@@ -97,7 +97,7 @@ async fn setup() -> (
             &test_metadata,
             &user,
             AddCardToPackArgs {
-                max_supply: 5,
+                max_supply: 0,
                 weight: 100,
                 index: test_pack_card.index,
             },
@@ -242,4 +242,36 @@ async fn fail_invalid_state() {
         .await;
 
     assert_custom_error!(result.unwrap_err(), NFTPacksError::WrongPackState, 0);
+}
+
+#[tokio::test]
+async fn success_delete_before_activated_state() {
+    let (mut context, test_pack_set, test_pack_card, test_metadata, _test_master_edition, user) =
+        setup().await;
+
+    let new_token_owner_acc = Keypair::new();
+    create_token_account(
+        &mut context,
+        &new_token_owner_acc,
+        &test_metadata.mint.pubkey(),
+        &test_pack_set.authority.pubkey(),
+    )
+    .await
+    .unwrap();
+
+    let pack_set = test_pack_set.get_data(&mut context).await;
+    assert_eq!(pack_set.pack_cards, 1);
+
+    test_pack_set
+        .delete_card(
+            &mut context,
+            &test_pack_card,
+            &user.pubkey(),
+            &new_token_owner_acc.pubkey(),
+        )
+        .await
+        .unwrap();
+
+    let pack_set = test_pack_set.get_data(&mut context).await;
+    assert_eq!(pack_set.pack_cards, 0);
 }

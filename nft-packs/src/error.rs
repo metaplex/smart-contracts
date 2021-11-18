@@ -155,6 +155,22 @@ pub enum NFTPacksError {
     /// Cards for this pack shouldn't have supply value
     #[error("Cards for this pack shouldn't have supply value")]
     CardShouldntHaveSupplyValue,
+
+    /// Pack is already full of cards
+    #[error("Pack is already full of cards")]
+    PackIsFullWithCards,
+
+    /// Card weights should be cleaned up
+    #[error("Card weights should be cleaned up")]
+    WeightsNotCleanedUp,
+
+    /// User already redeemed this card
+    #[error("User already redeemed this card")]
+    CardAlreadyRedeemed,
+
+    /// User can't redeem this card
+    #[error("User can't redeem this card")]
+    UserCantRedeemThisCard,
 }
 
 impl From<NFTPacksError> for ProgramError {

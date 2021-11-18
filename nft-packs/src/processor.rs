@@ -7,10 +7,12 @@ use add_voucher_to_pack::add_voucher_to_pack;
 use borsh::BorshDeserialize;
 use change_authority::transfer_authority;
 use claim_pack::claim_pack;
+use clean_up::clean_up;
 use close_pack::close_pack;
 use deactivate::deactivate_pack;
 use delete_pack::delete_pack;
 use delete_pack_card::delete_pack_card;
+use delete_pack_config::delete_pack_config;
 use delete_pack_voucher::delete_pack_voucher;
 use edit_pack::edit_pack;
 use init_pack::init_pack;
@@ -22,10 +24,12 @@ pub mod add_card_to_pack;
 pub mod add_voucher_to_pack;
 pub mod change_authority;
 pub mod claim_pack;
+pub mod clean_up;
 pub mod close_pack;
 pub mod deactivate;
 pub mod delete_pack;
 pub mod delete_pack_card;
+pub mod delete_pack_config;
 pub mod delete_pack_voucher;
 pub mod edit_pack;
 pub mod init_pack;
@@ -66,9 +70,9 @@ impl Processor {
                 msg!("Instruction: ClosePack");
                 close_pack(program_id, accounts)
             }
-            NFTPacksInstruction::ClaimPack => {
+            NFTPacksInstruction::ClaimPack(args) => {
                 msg!("Instruction: ClaimPack");
-                claim_pack(program_id, accounts)
+                claim_pack(program_id, accounts, args)
             }
             NFTPacksInstruction::TransferPackAuthority => {
                 msg!("Instruction: TransferPackAuthority");
@@ -93,6 +97,14 @@ impl Processor {
             NFTPacksInstruction::RequestCardForRedeem(args) => {
                 msg!("Instruction: RequestCardForRedeem");
                 request_card_for_redeem(program_id, accounts, args)
+            }
+            NFTPacksInstruction::CleanUp => {
+                msg!("Instruction: CleanUp");
+                clean_up(program_id, accounts)
+            }
+            NFTPacksInstruction::DeletePackConfig => {
+                msg!("Instruction: DeletePackConfig");
+                delete_pack_config(program_id, accounts)
             }
         }
     }
