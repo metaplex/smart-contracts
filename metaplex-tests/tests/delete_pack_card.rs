@@ -49,7 +49,7 @@ async fn setup() -> (
                 uri: uri.clone(),
                 description: description.clone(),
                 mutable: true,
-                distribution_type: PackDistributionType::Fixed,
+                distribution_type: PackDistributionType::Unlimited,
                 allowed_amount_to_redeem: 10,
                 redeem_start_date,
                 redeem_end_date,
@@ -83,7 +83,7 @@ async fn setup() -> (
         .unwrap();
 
     test_master_edition
-        .create(&mut context, Some(10))
+        .create(&mut context, None)
         .await
         .unwrap();
 
@@ -97,7 +97,7 @@ async fn setup() -> (
             &test_metadata,
             &user,
             AddCardToPackArgs {
-                max_supply: 5,
+                max_supply: 0,
                 weight: 100,
                 index: test_pack_card.index,
             },

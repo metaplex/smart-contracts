@@ -2,9 +2,13 @@
 
 use crate::{
     error::NFTPacksError,
+    find_pack_config_program_address,
     instruction::RequestCardToRedeemArgs,
     math::SafeMath,
-    state::{InitProvingProcessParams, PackSet, PackVoucher, ProvingProcess},
+    state::{
+        CleanUpActions, InitProvingProcessParams, PackConfig, PackDistributionType, PackSet,
+        PackVoucher, ProvingProcess,
+    },
     utils::*,
 };
 use metaplex::state::Store;
@@ -21,6 +25,7 @@ use solana_program::{
     program_pack::Pack,
     pubkey::Pubkey,
     sysvar::{rent::Rent, Sysvar},
+    borsh::try_from_slice_unchecked,
 };
 use spl_token::state::Account;
 
@@ -32,6 +37,7 @@ pub fn request_card_for_redeem(
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let pack_set_account = next_account_info(account_info_iter)?;
+    let pack_config_account = next_account_info(account_info_iter)?;
     let store_account = next_account_info(account_info_iter)?;
     let edition_data_account = next_account_info(account_info_iter)?;
     let edition_mint_account = next_account_info(account_info_iter)?;
@@ -52,6 +58,15 @@ pub fn request_card_for_redeem(
     assert_owned_by(edition_mint_account, &spl_token::id())?;
     assert_owned_by(user_token_account, &spl_token::id())?;
     assert_owned_by(voucher_account, program_id)?;
+    assert_owned_by(pack_config_account, program_id)?;
+
+    let (pack_config_pubkey, _) =
+        find_pack_config_program_address(program_id, pack_set_account.key);
+    assert_account_key(pack_config_account, &pack_config_pubkey)?;
+
+    let mut pack_config = PackConfig::unpack(&pack_config_account.data.borrow_mut())?;
+
+    pack_config.assert_cleaned_up()?;
 
     let store = Store::from_account_info(store_account)?;
 
@@ -130,11 +145,6 @@ pub fn request_card_for_redeem(
 
     pack_set.assert_activated()?;
 
-    // check if user already got index card
-    if proving_process.next_card_to_redeem != 0 {
-        return Err(NFTPacksError::AlreadySetNextCardToRedeem.into());
-    }
-
     let current_timestamp = clock.unix_timestamp as u64;
 
     if current_timestamp < pack_set.redeem_start_date {
@@ -147,26 +157,44 @@ pub fn request_card_for_redeem(
         }
     }
 
-    if proving_process.cards_redeemed == pack_set.allowed_amount_to_redeem {
+    // check if user already get all the card indexes
+    if (proving_process.cards_to_redeem.len() as u32) == pack_set.allowed_amount_to_redeem {
         return Err(NFTPacksError::UserRedeemedAllCards.into());
     }
 
     let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
 
-    let min: u32 = (1 as u32).error_add(u16::MAX as u32)?;
-    // increment pack cards to include max index
-    let max: u32 = ((pack_set.pack_cards.error_add(1)?) as u32).error_add(u16::MAX as u32)?;
+    let weight_sum = if pack_set.distribution_type == PackDistributionType::MaxSupply {
+        pack_set.total_editions
+    } else {
+        pack_set.total_weight
+    };
 
-    // (rand * (max - min + min)) / u16::MAX
-    let next_card_to_redeem: u32 = ((random_value as u32)
-        .error_mul(max.error_sub(min)?)?
-        .error_add(min)?)
-    .error_div(u16::MAX as u32)?;
+    let (next_card_to_redeem, value, max_supply) =
+        pack_config.select_weighted_random(random_value, weight_sum)?;
 
-    proving_process.next_card_to_redeem = next_card_to_redeem;
+    // set false means card isn't redeemed yet
+    proving_process
+        .cards_to_redeem
+        .insert(next_card_to_redeem, false);
+
+    match pack_set.distribution_type {
+        PackDistributionType::MaxSupply => {
+            let new_value = value.error_decrement()?;
+            pack_config.action_to_do = CleanUpActions::Change(next_card_to_redeem, new_value);
+        }
+        PackDistributionType::Fixed => {
+            let new_supply = max_supply.error_decrement()?;
+            pack_config.action_to_do = CleanUpActions::Change(next_card_to_redeem, new_supply);
+        }
+        PackDistributionType::Unlimited => {
+            // do nothing because we shouldn't change any values here
+        }
+    }
 
     // Update state
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;
+    PackConfig::pack(pack_config, *pack_config_account.data.borrow_mut())?;
 
     Ok(())
 }
@@ -195,7 +223,7 @@ pub fn get_proving_process_data<'a>(
                 rent,
             )?;
 
-            let mut data = ProvingProcess::unpack_unchecked(&account_info.data.borrow_mut())?;
+            let mut data: ProvingProcess = try_from_slice_unchecked(&account_info.data.borrow_mut())?;
 
             data.init(InitProvingProcessParams {
                 voucher_mint: *voucher_mint.key,
