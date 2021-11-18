@@ -68,6 +68,7 @@ pub fn request_card_for_redeem(
     ];
     let bump_seed = assert_derivation(program_id, proving_process_account, proving_process_seeds)?;
 
+    // Return existing ProvingProcess(owned by user) or create new
     let mut proving_process = get_proving_process_data(
         program_id,
         proving_process_account,
@@ -91,6 +92,7 @@ pub fn request_card_for_redeem(
 
     let voucher = PackVoucher::unpack(&voucher_account.data.borrow_mut())?;
 
+    // Check if PackVoucher is associated with current PackSet
     assert_account_key(pack_set_account, &voucher.pack_set)?;
 
     assert_derivation(
@@ -125,6 +127,7 @@ pub fn request_card_for_redeem(
         }
     }
 
+    // Check if ProvingProcess is associated with current PackSet
     assert_account_key(pack_set_account, &proving_process.pack_set)?;
     assert_account_key(edition_mint_account, &proving_process.voucher_mint)?;
 
@@ -164,6 +167,20 @@ pub fn request_card_for_redeem(
     .error_div(u16::MAX as u32)?;
 
     proving_process.next_card_to_redeem = next_card_to_redeem;
+
+    // Burn PackVoucher tokens
+    burn_tokens(
+        user_token_account.clone(),
+        edition_mint_account.clone(),
+        user_wallet_account.clone(),
+        ProvingProcess::TOKEN_AMOUNT,
+    )?;
+    
+    close_token_account(
+        user_token_account.clone(),
+        user_wallet_account.clone(),
+        user_wallet_account.clone(),
+    )?;
 
     // Update state
     ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;
