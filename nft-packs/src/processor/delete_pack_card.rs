@@ -2,9 +2,9 @@
 
 use crate::{
     error::NFTPacksError,
-    find_pack_card_program_address, find_pack_config_program_address, find_program_authority,
+    find_pack_card_program_address, find_program_authority,
     math::SafeMath,
-    state::{PackCard, PackConfig, PackSet, PREFIX},
+    state::{PackCard, PackSet, PREFIX},
     utils::*,
 };
 use solana_program::{

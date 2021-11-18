@@ -7,7 +7,7 @@ use metaplex_nft_packs::{
     state::{PackDistributionType, ProvingProcess},
 };
 use num_traits::FromPrimitive;
-use solana_program::{instruction::InstructionError, program_pack::Pack, system_instruction, borsh::try_from_slice_unchecked};
+use solana_program::{instruction::InstructionError, program_pack::Pack, system_instruction};
 use solana_program_test::*;
 use solana_sdk::{
     signature::Keypair,
@@ -51,7 +51,7 @@ async fn create_master_edition(
 }
 
 #[tokio::test]
-async fn successX() {
+async fn success() {
     let mut context = nft_packs_program_test().start_with_context().await;
 
     let name = [7; 32];
@@ -155,10 +155,7 @@ async fn successX() {
     test_pack_set.clean_up(&mut context).await.unwrap();
     let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context)
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
         .request_card_for_redeem(
@@ -180,7 +177,7 @@ async fn successX() {
         &voucher_edition.mint.pubkey(),
     );
     let proving_process_data = get_account(&mut context, &proving_process_key).await;
-    let proving_process: ProvingProcess = try_from_slice_unchecked(&proving_process_data.data).unwrap();
+    let proving_process = ProvingProcess::unpack(&proving_process_data.data).unwrap();
 
     assert_eq!(proving_process.pack_set, test_pack_set.keypair.pubkey());
 
@@ -313,10 +310,7 @@ async fn success_two_cards() {
     test_pack_set.clean_up(&mut context).await.unwrap();
     let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context)
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
         .request_card_for_redeem(
@@ -344,14 +338,11 @@ async fn success_two_cards() {
 
     assert_eq!(proving_process.cards_to_redeem.len(), 1);
 
-    println!(
-        "Chosen card index: {:?}",
-        proving_process.cards_to_redeem
-    );
+    println!("Chosen card index: {:?}", proving_process.cards_to_redeem);
 }
 
 #[tokio::test]
-async fn fail_request_twice() {
+async fn fail_request_without_clean_up() {
     let mut context = nft_packs_program_test().start_with_context().await;
 
     let name = [7; 32];
@@ -455,10 +446,7 @@ async fn fail_request_twice() {
     test_pack_set.clean_up(&mut context).await.unwrap();
     let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context)
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
         .request_card_for_redeem(
@@ -477,8 +465,6 @@ async fn fail_request_twice() {
     // do wrap to update state
     context.warp_to_slot(5).unwrap();
 
-    test_pack_set.clean_up(&mut context).await.unwrap();
-
     let result = test_pack_set
         .request_card_for_redeem(
             &mut context,
@@ -492,9 +478,5 @@ async fn fail_request_twice() {
         )
         .await;
 
-    assert_custom_error!(
-        result.unwrap_err(),
-        NFTPacksError::AlreadySetNextCardToRedeem,
-        0
-    );
+    assert_custom_error!(result.unwrap_err(), NFTPacksError::WeightsNotCleanedUp, 0);
 }

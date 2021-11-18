@@ -1,10 +1,10 @@
+use rand::prelude::*;
 use randomness_oracle_program::{id, instruction, state::RandomnessOracle};
 use solana_program_test::*;
 use solana_sdk::{
     program_pack::Pack, signature::Keypair, signer::Signer, system_instruction,
     transaction::Transaction, transport,
 };
-use rand::prelude::*;
 
 use super::get_account;
 
@@ -48,10 +48,7 @@ impl TestRandomnessOracle {
         context.banks_client.process_transaction(tx).await
     }
 
-    pub async fn update(
-        &mut self,
-        context: &mut ProgramTestContext,
-    ) -> transport::Result<()> {
+    pub async fn update(&mut self, context: &mut ProgramTestContext) -> transport::Result<()> {
         let value: [u8; 32] = self.rand.gen();
         let tx = Transaction::new_signed_with_payer(
             &[instruction::update_randomness_oracle(

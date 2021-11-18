@@ -202,7 +202,7 @@ pub enum NFTPacksInstruction {
     /// - read              metaplex_token_metadata program
     /// - read              spl_token program
     /// - read              system program
-    /// 
+    ///
     /// Parameters:
     /// - index             u32
     ClaimPack(ClaimPackArgs),
