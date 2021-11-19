@@ -430,7 +430,7 @@ pub fn claim_pack(
     index: u32,
 ) -> Instruction {
     let (proving_process, _) =
-        find_proving_process_program_address(program_id, pack_set, voucher_mint);
+        find_proving_process_program_address(program_id, pack_set, user_wallet, voucher_mint);
     let (pack_card, _) = find_pack_card_program_address(program_id, pack_set, index);
     let (program_authority, _) = find_program_authority(program_id);
 
@@ -590,7 +590,7 @@ pub fn request_card_for_redeem(
     index: u32,
 ) -> Instruction {
     let (proving_process, _) =
-        find_proving_process_program_address(program_id, pack_set, edition_mint);
+        find_proving_process_program_address(program_id, pack_set, user_wallet, edition_mint);
 
     let (pack_voucher, _) = find_pack_voucher_program_address(program_id, pack_set, index);
 

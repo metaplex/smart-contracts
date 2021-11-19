@@ -73,12 +73,14 @@ pub fn find_pack_voucher_program_address(
 pub fn find_proving_process_program_address(
     program_id: &Pubkey,
     pack: &Pubkey,
+    user_wallet: &Pubkey,
     voucher_mint: &Pubkey,
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             ProvingProcess::PREFIX.as_bytes(),
             &pack.to_bytes(),
+            &user_wallet.to_bytes(),
             &voucher_mint.to_bytes(),
         ],
         program_id,

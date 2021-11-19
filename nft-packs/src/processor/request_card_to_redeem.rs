@@ -175,7 +175,7 @@ pub fn request_card_for_redeem(
         user_wallet_account.clone(),
         ProvingProcess::TOKEN_AMOUNT,
     )?;
-    
+
     close_token_account(
         user_token_account.clone(),
         user_wallet_account.clone(),
