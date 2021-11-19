@@ -28,7 +28,7 @@ use solana_program::{
 };
 use spl_token::state::Account;
 
-/// Process ClaimPack instruction
+/// Process RequestCardForRedeem instruction
 pub fn request_card_for_redeem(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -78,6 +78,7 @@ pub fn request_card_for_redeem(
     let proving_process_seeds = &[
         ProvingProcess::PREFIX.as_bytes(),
         pack_set_account.key.as_ref(),
+        user_wallet_account.key.as_ref(),
         edition_mint_account.key.as_ref(),
     ];
     let bump_seed = assert_derivation(program_id, proving_process_account, proving_process_seeds)?;
@@ -86,6 +87,7 @@ pub fn request_card_for_redeem(
         program_id,
         proving_process_account,
         user_wallet_account,
+        user_token_account,
         edition_mint_account,
         pack_set_account.key,
         proving_process_seeds,
@@ -198,11 +200,34 @@ pub fn request_card_for_redeem(
     Ok(())
 }
 
+/// Burn `PackVoucher` tokens.
+pub fn burn_pack_voucher<'a>(
+    user_token_account: &AccountInfo<'a>,
+    user_wallet_account: &AccountInfo<'a>,
+    voucher_mint_account: &AccountInfo<'a>,
+) -> Result<(), ProgramError> {
+    burn_tokens(
+        user_token_account.clone(),
+        voucher_mint_account.clone(),
+        user_wallet_account.clone(),
+        ProvingProcess::TOKEN_AMOUNT,
+    )?;
+
+    close_token_account(
+        user_token_account.clone(),
+        user_wallet_account.clone(),
+        user_wallet_account.clone(),
+    )?;
+
+    Ok(())
+}
+
 /// Returns deserialized proving process data or initialized if it wasn't initialized yet
 pub fn get_proving_process_data<'a>(
     program_id: &Pubkey,
     account_info: &AccountInfo<'a>,
     user_wallet: &AccountInfo<'a>,
+    user_token: &AccountInfo<'a>,
     voucher_mint: &AccountInfo<'a>,
     pack_set: &Pubkey,
     signers_seeds: &[&[u8]],
@@ -214,6 +239,10 @@ pub fn get_proving_process_data<'a>(
     let proving_process = match unpack {
         Ok(data) => Ok(data),
         Err(_) => {
+            // Burn PackVoucher tokens
+            burn_pack_voucher(user_token, user_wallet, voucher_mint)?;
+
+            // Create ProvingProcess account on-chain
             create_account::<ProvingProcess>(
                 program_id,
                 user_wallet.clone(),
@@ -222,12 +251,15 @@ pub fn get_proving_process_data<'a>(
                 rent,
             )?;
 
+            // Get mutable account instance
             let mut data = ProvingProcess::unpack_unchecked(&account_info.data.borrow_mut())?;
 
+            // Initialize
             data.init(InitProvingProcessParams {
                 voucher_mint: *voucher_mint.key,
                 pack_set: *pack_set,
             });
+
             Ok(data)
         }
     };

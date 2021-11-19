@@ -1,12 +1,10 @@
 mod utils;
 
 use metaplex_nft_packs::{
-    error::NFTPacksError,
     find_proving_process_program_address,
     instruction::{AddCardToPackArgs, InitPackSetArgs},
     state::{PackDistributionType, ProvingProcess},
 };
-use num_traits::FromPrimitive;
 use solana_program::{instruction::InstructionError, program_pack::Pack, system_instruction};
 use solana_program_test::*;
 use solana_sdk::{
@@ -174,6 +172,7 @@ async fn success() {
     let (proving_process_key, _) = find_proving_process_program_address(
         &metaplex_nft_packs::id(),
         &test_pack_set.keypair.pubkey(),
+        &edition_authority.pubkey(),
         &voucher_edition.mint.pubkey(),
     );
     let proving_process_data = get_account(&mut context, &proving_process_key).await;
@@ -329,6 +328,7 @@ async fn success_two_cards() {
     let (proving_process_key, _) = find_proving_process_program_address(
         &metaplex_nft_packs::id(),
         &test_pack_set.keypair.pubkey(),
+        &edition_authority.pubkey(),
         &voucher_edition.mint.pubkey(),
     );
     let proving_process_data = get_account(&mut context, &proving_process_key).await;
@@ -478,5 +478,11 @@ async fn fail_request_without_clean_up() {
         )
         .await;
 
-    assert_custom_error!(result.unwrap_err(), NFTPacksError::WeightsNotCleanedUp, 0);
+    assert_transport_error!(
+        result.unwrap_err(),
+        TransportError::TransactionError(TransactionError::InstructionError(
+            0,
+            InstructionError::IllegalOwner
+        ))
+    );
 }

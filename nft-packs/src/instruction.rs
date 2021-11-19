@@ -464,7 +464,7 @@ pub fn claim_pack(
     index: u32,
 ) -> Instruction {
     let (proving_process, _) =
-        find_proving_process_program_address(program_id, pack_set, voucher_mint);
+        find_proving_process_program_address(program_id, pack_set, user_wallet, voucher_mint);
     let (pack_card, _) = find_pack_card_program_address(program_id, pack_set, index);
     let (program_authority, _) = find_program_authority(program_id);
 
@@ -627,7 +627,7 @@ pub fn request_card_for_redeem(
     index: u32,
 ) -> Instruction {
     let (proving_process, _) =
-        find_proving_process_program_address(program_id, pack_set, edition_mint);
+        find_proving_process_program_address(program_id, pack_set, user_wallet, edition_mint);
 
     let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
 
@@ -638,14 +638,15 @@ pub fn request_card_for_redeem(
         AccountMeta::new(pack_config, false),
         AccountMeta::new_readonly(*store, false),
         AccountMeta::new_readonly(*edition, false),
-        AccountMeta::new_readonly(*edition_mint, false),
+        AccountMeta::new(*edition_mint, false),
         AccountMeta::new_readonly(pack_voucher, false),
         AccountMeta::new(proving_process, false),
         AccountMeta::new(*user_wallet, true),
-        AccountMeta::new_readonly(*user_token_acc, false),
+        AccountMeta::new(*user_token_acc, false),
         AccountMeta::new_readonly(*random_oracle, false),
         AccountMeta::new_readonly(sysvar::clock::id(), false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
+        AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 

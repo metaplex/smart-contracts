@@ -210,6 +210,7 @@ async fn success_fixed_probability() {
     let (proving_process_key, _) = find_proving_process_program_address(
         &metaplex_nft_packs::id(),
         &test_pack_set.keypair.pubkey(),
+        &edition_authority.pubkey(),
         &voucher_edition.mint.pubkey(),
     );
 
@@ -375,6 +376,7 @@ async fn success_max_supply_probability() {
     let (proving_process_key, _) = find_proving_process_program_address(
         &metaplex_nft_packs::id(),
         &test_pack_set.keypair.pubkey(),
+        &edition_authority.pubkey(),
         &voucher_edition.mint.pubkey(),
     );
 
@@ -561,6 +563,7 @@ async fn fail_wrong_user_wallet() {
     let (proving_process, _) = find_proving_process_program_address(
         &metaplex_nft_packs::id(),
         &test_pack_set.keypair.pubkey(),
+        &edition_authority.pubkey(),
         &voucher_edition.mint.pubkey(),
     );
     let (pack_card, _) = find_pack_card_program_address(

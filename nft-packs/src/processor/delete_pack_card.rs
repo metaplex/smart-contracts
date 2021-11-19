@@ -4,13 +4,12 @@ use crate::{
     error::NFTPacksError,
     find_pack_card_program_address, find_program_authority,
     math::SafeMath,
-    state::{PackCard, PackSet, PREFIX},
+    state::{PackCard, PackSet, PackSetState, PREFIX},
     utils::*,
 };
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    msg,
     program_pack::Pack,
     pubkey::Pubkey,
 };
@@ -38,7 +37,6 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
     // Obtain PackSet instance
     let mut pack_set = PackSet::unpack(&pack_set_account.data.borrow_mut())?;
     assert_account_key(authority_account, &pack_set.authority)?;
-
 
     // Ensure, that PackSet is in correct state
     // Only PackSetState::Ended or PackSetState::NotActivated is allowed

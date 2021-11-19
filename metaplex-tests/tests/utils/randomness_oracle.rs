@@ -15,7 +15,7 @@ pub struct TestRandomnessOracle {
 
 impl TestRandomnessOracle {
     pub fn new() -> Self {
-        let mut rng = rand::thread_rng();
+        let rng = rand::thread_rng();
         TestRandomnessOracle {
             keypair: Keypair::new(),
             rand: rng,
