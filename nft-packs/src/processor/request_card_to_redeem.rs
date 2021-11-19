@@ -53,10 +53,11 @@ pub fn request_card_for_redeem(
     assert_owned_by(user_token_account, &spl_token::id())?;
     assert_owned_by(voucher_account, program_id)?;
 
-    let store = Store::from_account_info(store_account)?;
-
-    assert_owned_by(edition_data_account, &store.token_metadata_program)?;
+    // Validate signer
     assert_signer(&user_wallet_account)?;
+
+    let store = Store::from_account_info(store_account)?;
+    assert_owned_by(edition_data_account, &store.token_metadata_program)?;
 
     let pack_set = PackSet::unpack(&pack_set_account.data.borrow())?;
     assert_account_key(store_account, &pack_set.store)?;
@@ -64,6 +65,7 @@ pub fn request_card_for_redeem(
     let proving_process_seeds = &[
         ProvingProcess::PREFIX.as_bytes(),
         pack_set_account.key.as_ref(),
+        user_wallet_account.key.as_ref(),
         edition_mint_account.key.as_ref(),
     ];
     let bump_seed = assert_derivation(program_id, proving_process_account, proving_process_seeds)?;
@@ -73,6 +75,7 @@ pub fn request_card_for_redeem(
         program_id,
         proving_process_account,
         user_wallet_account,
+        user_token_account,
         edition_mint_account,
         pack_set_account.key,
         proving_process_seeds,
@@ -133,7 +136,7 @@ pub fn request_card_for_redeem(
 
     pack_set.assert_activated()?;
 
-    // check if user already got index card
+    // Check if user already got index card
     if proving_process.next_card_to_redeem != 0 {
         return Err(NFTPacksError::AlreadySetNextCardToRedeem.into());
     }
@@ -157,7 +160,7 @@ pub fn request_card_for_redeem(
     let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
 
     let min: u32 = (1 as u32).error_add(u16::MAX as u32)?;
-    // increment pack cards to include max index
+    // Increment pack cards to include max index
     let max: u32 = ((pack_set.pack_cards.error_add(1)?) as u32).error_add(u16::MAX as u32)?;
 
     // (rand * (max - min + min)) / u16::MAX
@@ -168,10 +171,21 @@ pub fn request_card_for_redeem(
 
     proving_process.next_card_to_redeem = next_card_to_redeem;
 
-    // Burn PackVoucher tokens
+    // Update state
+    ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;
+
+    Ok(())
+}
+
+/// Burn `PackVoucher` tokens.
+pub fn burn_pack_voucher<'a>(
+    user_token_account: &AccountInfo<'a>,
+    user_wallet_account: &AccountInfo<'a>,
+    voucher_mint_account: &AccountInfo<'a>,
+) -> Result<(), ProgramError> {
     burn_tokens(
         user_token_account.clone(),
-        edition_mint_account.clone(),
+        voucher_mint_account.clone(),
         user_wallet_account.clone(),
         ProvingProcess::TOKEN_AMOUNT,
     )?;
@@ -182,9 +196,6 @@ pub fn request_card_for_redeem(
         user_wallet_account.clone(),
     )?;
 
-    // Update state
-    ProvingProcess::pack(proving_process, *proving_process_account.data.borrow_mut())?;
-
     Ok(())
 }
 
@@ -193,6 +204,7 @@ pub fn get_proving_process_data<'a>(
     program_id: &Pubkey,
     account_info: &AccountInfo<'a>,
     user_wallet: &AccountInfo<'a>,
+    user_token: &AccountInfo<'a>,
     voucher_mint: &AccountInfo<'a>,
     pack_set: &Pubkey,
     signers_seeds: &[&[u8]],
@@ -204,6 +216,10 @@ pub fn get_proving_process_data<'a>(
     let proving_process = match unpack {
         Ok(data) => Ok(data),
         Err(_) => {
+            // Burn PackVoucher tokens
+            burn_pack_voucher(user_token, user_wallet, voucher_mint)?;
+
+            // Create ProvingProcess account on-chain
             create_account::<ProvingProcess>(
                 program_id,
                 user_wallet.clone(),
@@ -212,12 +228,15 @@ pub fn get_proving_process_data<'a>(
                 rent,
             )?;
 
+            // Get mutable account instance
             let mut data = ProvingProcess::unpack_unchecked(&account_info.data.borrow_mut())?;
 
+            // Initialize
             data.init(InitProvingProcessParams {
                 voucher_mint: *voucher_mint.key,
                 pack_set: *pack_set,
             });
+
             Ok(data)
         }
     };

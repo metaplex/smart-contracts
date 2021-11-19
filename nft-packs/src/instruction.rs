@@ -598,14 +598,15 @@ pub fn request_card_for_redeem(
         AccountMeta::new(*pack_set, false),
         AccountMeta::new_readonly(*store, false),
         AccountMeta::new_readonly(*edition, false),
-        AccountMeta::new_readonly(*edition_mint, false),
+        AccountMeta::new(*edition_mint, false),
         AccountMeta::new_readonly(pack_voucher, false),
         AccountMeta::new(proving_process, false),
         AccountMeta::new(*user_wallet, true),
-        AccountMeta::new_readonly(*user_token_acc, false),
+        AccountMeta::new(*user_token_acc, false),
         AccountMeta::new_readonly(*random_oracle, false),
         AccountMeta::new_readonly(sysvar::clock::id(), false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
+        AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
 
