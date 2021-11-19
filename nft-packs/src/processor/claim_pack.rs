@@ -60,10 +60,19 @@ pub fn claim_pack(
 
     assert_account_key(pack_set_account, &proving_process.pack_set)?;
 
+    // Increment total redeemed cards
+    proving_process.cards_redeemed = proving_process.cards_redeemed.error_increment()?;
+
+    // Check if cards are exhausted
+    if pack_set.allowed_amount_to_redeem == proving_process.cards_redeemed {
+        proving_process.is_exhausted = true;
+    }
+
     let user_token_acc = Account::unpack(&user_voucher_token_account.data.borrow_mut())?;
     if user_token_acc.mint != proving_process.voucher_mint {
         return Err(NFTPacksError::WrongEditionMint.into());
     }
+
     if user_token_acc.owner != *user_wallet_account.key {
         if let COption::Some(delegated) = user_token_acc.delegate {
             if user_token_acc.delegated_amount == 0 || delegated != *user_wallet_account.key {
