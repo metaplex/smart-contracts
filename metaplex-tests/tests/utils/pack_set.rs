@@ -66,6 +66,19 @@ impl TestPackSet {
         context.banks_client.process_transaction(tx).await
     }
 
+    pub async fn clean_up(&self, context: &mut ProgramTestContext) -> transport::Result<()> {
+        let tx = Transaction::new_signed_with_payer(
+            &[instruction::clean_up(
+                &metaplex_nft_packs::id(),
+                &self.keypair.pubkey(),
+            )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer],
+            context.last_blockhash,
+        );
+        context.banks_client.process_transaction(tx).await
+    }
+
     pub async fn add_card(
         &self,
         context: &mut ProgramTestContext,

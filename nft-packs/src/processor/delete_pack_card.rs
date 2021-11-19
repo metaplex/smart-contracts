@@ -57,6 +57,11 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
     assert_account_key(pack_set_account, &pack_card.pack_set)?;
     assert_account_key(token_account, &pack_card.token_account)?;
 
+    // this check will work if someone forgot to claim card
+    if pack_card.max_supply != 0 {
+        return Err(NFTPacksError::NotEmptyPackSet.into());
+    }
+
     // Obtain PackCard token account instance
     let pack_card_token_account = spl_token::state::Account::unpack(&token_account.data.borrow())?;
 
@@ -77,6 +82,5 @@ pub fn delete_pack_card(program_id: &Pubkey, accounts: &[AccountInfo]) -> Progra
 
     // Update state
     PackSet::pack(pack_set, *pack_set_account.data.borrow_mut())?;
-
     Ok(())
 }

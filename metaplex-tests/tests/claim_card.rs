@@ -3,7 +3,9 @@ mod utils;
 use metaplex_nft_packs::{
     error::NFTPacksError,
     find_pack_card_program_address, find_program_authority, find_proving_process_program_address,
-    instruction::{claim_pack, AddCardToPackArgs, InitPackSetArgs, NFTPacksInstruction},
+    instruction::{
+        claim_pack, AddCardToPackArgs, ClaimPackArgs, InitPackSetArgs, NFTPacksInstruction,
+    },
     state::{PackDistributionType, ProvingProcess},
 };
 use num_traits::FromPrimitive;
@@ -160,16 +162,13 @@ async fn success_fixed_probability() {
         .unwrap();
 
     test_pack_set.activate(&mut context).await.unwrap();
-
+    test_pack_set.clean_up(&mut context).await.unwrap();
     let new_mint = Keypair::new();
     let new_mint_token_acc = Keypair::new();
 
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context, [1u8; 32])
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
         .request_card_for_redeem(
@@ -184,6 +183,10 @@ async fn success_fixed_probability() {
         )
         .await
         .unwrap();
+    // do wrap to update state
+    context.warp_to_slot(5).unwrap();
+
+    test_pack_set.clean_up(&mut context).await.unwrap();
 
     test_pack_set
         .claim_pack(
@@ -216,8 +219,7 @@ async fn success_fixed_probability() {
 
     let card_master_edition = card_master_edition.get_data(&mut context).await;
 
-    assert_eq!(proving_process.cards_redeemed, 1);
-    assert_eq!(proving_process.next_card_to_redeem, 0);
+    assert_eq!(proving_process.cards_to_redeem.len(), 1);
     assert_eq!(card_master_edition.supply, 1);
 
     let pack_set = test_pack_set.get_data(&mut context).await;
@@ -328,13 +330,10 @@ async fn success_max_supply_probability() {
         .unwrap();
 
     test_pack_set.activate(&mut context).await.unwrap();
-
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    test_pack_set.clean_up(&mut context).await.unwrap();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context, [1u8; 32])
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     context.warp_to_slot(3).unwrap();
 
@@ -386,8 +385,7 @@ async fn success_max_supply_probability() {
 
     let card_master_edition = card_master_edition.get_data(&mut context).await;
 
-    assert_eq!(proving_process.cards_redeemed, 1);
-    assert_eq!(proving_process.next_card_to_redeem, 0);
+    assert_eq!(proving_process.cards_to_redeem.len(), 1);
     assert_eq!(card_master_edition.supply, 1);
 }
 
@@ -494,13 +492,10 @@ async fn fail_wrong_user_wallet() {
         .unwrap();
 
     test_pack_set.activate(&mut context).await.unwrap();
-
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    test_pack_set.clean_up(&mut context).await.unwrap();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context, [1u8; 32])
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
         .request_card_for_redeem(
@@ -593,7 +588,7 @@ async fn fail_wrong_user_wallet() {
         &metaplex_token_metadata::id(),
     );
 
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
 
     let accounts = vec![
@@ -623,7 +618,7 @@ async fn fail_wrong_user_wallet() {
     let tx = Transaction::new_signed_with_payer(
         &[Instruction::new_with_borsh(
             metaplex_nft_packs::id(),
-            &NFTPacksInstruction::ClaimPack,
+            &NFTPacksInstruction::ClaimPack(ClaimPackArgs { index: 1 }), // set index to 1 because we added only one card to pack
             accounts,
         )],
         Some(&context.payer.pubkey()),
@@ -739,13 +734,10 @@ async fn fail_claim_twice() {
         .unwrap();
 
     test_pack_set.activate(&mut context).await.unwrap();
-
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    test_pack_set.clean_up(&mut context).await.unwrap();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context, [1u8; 32])
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     context.warp_to_slot(3).unwrap();
 
@@ -830,18 +822,7 @@ async fn fail_claim_twice() {
         context.last_blockhash,
     );
 
-    let result = context
-        .banks_client
-        .process_transaction(tx)
-        .await
-        .err()
-        .unwrap();
+    let result = context.banks_client.process_transaction(tx).await;
 
-    assert_transport_error!(
-        result,
-        TransportError::TransactionError(TransactionError::InstructionError(
-            0,
-            InstructionError::InvalidArgument
-        ))
-    );
+    assert_custom_error!(result.unwrap_err(), NFTPacksError::CardAlreadyRedeemed, 0);
 }

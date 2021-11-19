@@ -150,13 +150,10 @@ async fn success() {
         .unwrap();
 
     test_pack_set.activate(&mut context).await.unwrap();
-
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    test_pack_set.clean_up(&mut context).await.unwrap();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context, [1u8; 32])
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
         .request_card_for_redeem(
@@ -179,12 +176,12 @@ async fn success() {
         &voucher_edition.mint.pubkey(),
     );
     let proving_process_data = get_account(&mut context, &proving_process_key).await;
-    let proving_process = ProvingProcess::unpack_from_slice(&proving_process_data.data).unwrap();
+    let proving_process = ProvingProcess::unpack(&proving_process_data.data).unwrap();
 
     assert_eq!(proving_process.pack_set, test_pack_set.keypair.pubkey());
 
     // should be 1 such as we have only one card in a pack
-    assert!(proving_process.next_card_to_redeem == 1);
+    assert_eq!(proving_process.cards_to_redeem.len(), 1);
 }
 
 #[tokio::test]
@@ -309,13 +306,10 @@ async fn success_two_cards() {
         .unwrap();
 
     test_pack_set.activate(&mut context).await.unwrap();
-
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    test_pack_set.clean_up(&mut context).await.unwrap();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context, [1u8; 32])
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
         .request_card_for_redeem(
@@ -342,16 +336,13 @@ async fn success_two_cards() {
 
     assert_eq!(proving_process.pack_set, test_pack_set.keypair.pubkey());
 
-    assert!(proving_process.next_card_to_redeem > 1);
+    assert_eq!(proving_process.cards_to_redeem.len(), 1);
 
-    println!(
-        "Chosen card index: {:?}",
-        proving_process.next_card_to_redeem
-    );
+    println!("Chosen card index: {:?}", proving_process.cards_to_redeem);
 }
 
 #[tokio::test]
-async fn fail_request_twice() {
+async fn fail_request_without_clean_up() {
     let mut context = nft_packs_program_test().start_with_context().await;
 
     let name = [7; 32];
@@ -452,13 +443,10 @@ async fn fail_request_twice() {
         .unwrap();
 
     test_pack_set.activate(&mut context).await.unwrap();
-
-    let test_randomness_oracle = TestRandomnessOracle::new();
+    test_pack_set.clean_up(&mut context).await.unwrap();
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
-    test_randomness_oracle
-        .update(&mut context, [1u8; 32])
-        .await
-        .unwrap();
+    test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
         .request_card_for_redeem(

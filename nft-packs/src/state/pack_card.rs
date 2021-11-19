@@ -44,6 +44,12 @@ impl PackCard {
         self.max_supply = params.max_supply;
         self.weight = params.weight;
     }
+
+    /// Decrement supply value
+    pub fn decrement_supply(&mut self) -> Result<(), ProgramError> {
+        self.max_supply = self.max_supply.error_decrement()?;
+        Ok(())
+    }
 }
 
 /// Initialize a PackCard params

@@ -2,7 +2,8 @@
 #![allow(missing_docs)]
 
 use crate::{
-    find_pack_card_program_address, find_pack_voucher_program_address, find_program_authority,
+    find_pack_card_program_address, find_pack_config_program_address,
+    find_pack_voucher_program_address, find_program_authority,
     find_proving_process_program_address, state::PackDistributionType,
 };
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -59,6 +60,14 @@ pub struct EditPackSetArgs {
     pub mutable: Option<bool>,
 }
 
+/// Claim card from pack
+#[repr(C)]
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
+pub struct ClaimPackArgs {
+    /// Card index
+    pub index: u32,
+}
+
 /// Request card to redeem arguments
 #[repr(C)]
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Clone)]
@@ -100,6 +109,7 @@ pub enum NFTPacksInstruction {
     ///
     /// Accounts:
     /// - read, write                   pack_set
+    /// - write                         pack_config (PDA, ['config', pack])
     /// - write                         pack_card (PDA, ['card', pack, index])
     /// - signer                        authority
     /// - read                          master_edition
@@ -173,7 +183,7 @@ pub enum NFTPacksInstruction {
     /// MasterEdition to user account or return empty response depends successfully or not user open pack with specific MasterEdition.
     ///
     /// Accounts:
-    /// - read, write       pack_set
+    /// - read              pack_set
     /// - read, write       proving_process (PDA, ['proving', pack, user_wallet])
     /// - signer            user_wallet
     /// - read              user_voucher_token
@@ -192,8 +202,10 @@ pub enum NFTPacksInstruction {
     /// - read              metaplex_token_metadata program
     /// - read              spl_token program
     /// - read              system program
-    /// - read              clock program
-    ClaimPack,
+    ///
+    /// Parameters:
+    /// - index             u32
+    ClaimPack(ClaimPackArgs),
 
     /// TransferPackAuthority
     ///
@@ -235,7 +247,6 @@ pub enum NFTPacksInstruction {
     /// DeletePackVoucher
     ///
     /// Transfer all the SOL from pack voucher account to refunder account and thus remove it.
-    /// Also transfer master token to new owner.
     ///
     /// Accounts:
     /// - write            pack_set
@@ -265,6 +276,7 @@ pub enum NFTPacksInstruction {
     ///
     /// Accounts:
     /// - read                     pack_set
+    /// - read, write              pack_config (PDA, ['config', pack])
     /// - read                     store
     /// - read                     edition
     /// - read                     edition_mint
@@ -280,6 +292,26 @@ pub enum NFTPacksInstruction {
     /// Parameters:
     /// - index    u32
     RequestCardForRedeem(RequestCardToRedeemArgs),
+
+    /// CleanUp
+    ///
+    /// Sorts weights of all the cards and removes exhausted
+    ///
+    /// Accounts:
+    /// - read                     pack_set
+    /// - read, write              pack_config (PDA, ['config', pack])
+    CleanUp,
+
+    /// Delete PackConfig account
+    ///
+    /// Transfer all the SOL from pack card account to refunder account and thus remove it.
+    ///
+    /// Accounts:
+    /// - read                pack_set
+    /// - write               pack_config (PDA, ['config', pack])
+    /// - write               refunder
+    /// - signer              authority
+    DeletePackConfig,
 }
 
 /// Create `InitPack` instruction
@@ -319,9 +351,11 @@ pub fn add_card_to_pack(
 ) -> Instruction {
     let (program_authority, _) = find_program_authority(program_id);
     let (pack_card, _) = find_pack_card_program_address(program_id, pack_set, args.index);
+    let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
 
     let accounts = vec![
         AccountMeta::new(*pack_set, false),
+        AccountMeta::new(pack_config, false),
         AccountMeta::new(pack_card, false),
         AccountMeta::new(*authority, true),
         AccountMeta::new_readonly(*master_edition, false),
@@ -450,7 +484,7 @@ pub fn claim_pack(
     );
 
     let accounts = vec![
-        AccountMeta::new(*pack_set, false),
+        AccountMeta::new_readonly(*pack_set, false),
         AccountMeta::new(proving_process, false),
         AccountMeta::new(*user_wallet, true),
         AccountMeta::new_readonly(*user_voucher_token, false),
@@ -470,10 +504,13 @@ pub fn claim_pack(
         AccountMeta::new_readonly(metaplex_token_metadata::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
-        AccountMeta::new_readonly(sysvar::clock::id(), false),
     ];
 
-    Instruction::new_with_borsh(*program_id, &NFTPacksInstruction::ClaimPack, accounts)
+    Instruction::new_with_borsh(
+        *program_id,
+        &NFTPacksInstruction::ClaimPack(ClaimPackArgs { index }),
+        accounts,
+    )
 }
 
 /// Create `TransferPackAuthority` instruction
@@ -592,10 +629,13 @@ pub fn request_card_for_redeem(
     let (proving_process, _) =
         find_proving_process_program_address(program_id, pack_set, user_wallet, edition_mint);
 
+    let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
+
     let (pack_voucher, _) = find_pack_voucher_program_address(program_id, pack_set, index);
 
     let accounts = vec![
         AccountMeta::new(*pack_set, false),
+        AccountMeta::new(pack_config, false),
         AccountMeta::new_readonly(*store, false),
         AccountMeta::new_readonly(*edition, false),
         AccountMeta::new(*edition_mint, false),
@@ -613,6 +653,42 @@ pub fn request_card_for_redeem(
     Instruction::new_with_borsh(
         *program_id,
         &NFTPacksInstruction::RequestCardForRedeem(RequestCardToRedeemArgs { index }),
+        accounts,
+    )
+}
+
+/// Create `CleanUp` instruction
+#[allow(clippy::too_many_arguments)]
+pub fn clean_up(program_id: &Pubkey, pack_set: &Pubkey) -> Instruction {
+    let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
+
+    let accounts = vec![
+        AccountMeta::new(*pack_set, false),
+        AccountMeta::new(pack_config, false),
+    ];
+
+    Instruction::new_with_borsh(*program_id, &NFTPacksInstruction::CleanUp, accounts)
+}
+
+/// Create `DeletePackConfig` instruction
+pub fn delete_pack_config(
+    program_id: &Pubkey,
+    pack_set: &Pubkey,
+    authority: &Pubkey,
+    refunder: &Pubkey,
+) -> Instruction {
+    let (pack_config, _) = find_pack_config_program_address(program_id, pack_set);
+
+    let accounts = vec![
+        AccountMeta::new_readonly(*pack_set, false),
+        AccountMeta::new(pack_config, false),
+        AccountMeta::new(*refunder, false),
+        AccountMeta::new_readonly(*authority, true),
+    ];
+
+    Instruction::new_with_borsh(
+        *program_id,
+        &NFTPacksInstruction::DeletePackConfig,
         accounts,
     )
 }
