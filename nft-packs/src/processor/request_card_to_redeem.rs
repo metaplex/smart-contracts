@@ -25,7 +25,6 @@ use solana_program::{
     program_pack::Pack,
     pubkey::Pubkey,
     sysvar::{rent::Rent, Sysvar},
-    borsh::try_from_slice_unchecked,
 };
 use spl_token::state::Account;
 
@@ -223,7 +222,7 @@ pub fn get_proving_process_data<'a>(
                 rent,
             )?;
 
-            let mut data: ProvingProcess = try_from_slice_unchecked(&account_info.data.borrow_mut())?;
+            let mut data = ProvingProcess::unpack_unchecked(&account_info.data.borrow_mut())?;
 
             data.init(InitProvingProcessParams {
                 voucher_mint: *voucher_mint.key,

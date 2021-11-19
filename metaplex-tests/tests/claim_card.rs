@@ -3,7 +3,9 @@ mod utils;
 use metaplex_nft_packs::{
     error::NFTPacksError,
     find_pack_card_program_address, find_program_authority, find_proving_process_program_address,
-    instruction::{claim_pack, AddCardToPackArgs, InitPackSetArgs, NFTPacksInstruction, ClaimPackArgs},
+    instruction::{
+        claim_pack, AddCardToPackArgs, ClaimPackArgs, InitPackSetArgs, NFTPacksInstruction,
+    },
     state::{PackDistributionType, ProvingProcess},
 };
 use num_traits::FromPrimitive;
@@ -613,7 +615,7 @@ async fn fail_wrong_user_wallet() {
     let tx = Transaction::new_signed_with_payer(
         &[Instruction::new_with_borsh(
             metaplex_nft_packs::id(),
-            &NFTPacksInstruction::ClaimPack(ClaimPackArgs{index: 1}),  // set index to 1 because we added only one card to pack
+            &NFTPacksInstruction::ClaimPack(ClaimPackArgs { index: 1 }), // set index to 1 because we added only one card to pack
             accounts,
         )],
         Some(&context.payer.pubkey()),
@@ -817,18 +819,7 @@ async fn fail_claim_twice() {
         context.last_blockhash,
     );
 
-    let result = context
-        .banks_client
-        .process_transaction(tx)
-        .await
-        .err()
-        .unwrap();
+    let result = context.banks_client.process_transaction(tx).await;
 
-    assert_transport_error!(
-        result,
-        TransportError::TransactionError(TransactionError::InstructionError(
-            0,
-            InstructionError::InvalidArgument
-        ))
-    );
+    assert_custom_error!(result.unwrap_err(), NFTPacksError::CardAlreadyRedeemed, 0);
 }

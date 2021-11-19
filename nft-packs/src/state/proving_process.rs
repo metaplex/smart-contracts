@@ -3,6 +3,7 @@
 use super::*;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
+    borsh::try_from_slice_unchecked,
     msg,
     program_error::ProgramError,
     program_pack::{IsInitialized, Pack, Sealed},
@@ -61,7 +62,7 @@ impl Pack for ProvingProcess {
     }
 
     fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
-        Self::try_from_slice(src).map_err(|_| {
+        try_from_slice_unchecked(src).map_err(|_| {
             msg!("Failed to deserialize");
             ProgramError::InvalidAccountData
         })
