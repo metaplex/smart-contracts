@@ -17,10 +17,16 @@ use std::collections::BTreeMap;
 pub struct ProvingProcess {
     /// Account type - ProvingProcess
     pub account_type: AccountType,
+    ///
+    pub wallet_key: Pubkey,
+    ///
+    pub is_exhausted: bool,
     /// Voucher mint
     pub voucher_mint: Pubkey,
     /// Pack set
     pub pack_set: Pubkey,
+    ///
+    pub cards_redeemed: u32,
     /// BTreeMap with cards to redeem and statuses if it's already redeemed
     pub cards_to_redeem: BTreeMap<u32, bool>,
 }
@@ -52,9 +58,9 @@ pub struct InitProvingProcessParams {
 impl Sealed for ProvingProcess {}
 
 impl Pack for ProvingProcess {
-    // 1 + 32 + 32 + BTreeMap size for 100 cards(500)
+    // 1 + 32 + 1 + 32 + 32 + 4 + BTreeMap size for 100 cards(500)
     // create account for max pack size
-    const LEN: usize = 565;
+    const LEN: usize = 602;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
