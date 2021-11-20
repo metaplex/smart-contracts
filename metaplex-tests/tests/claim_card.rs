@@ -192,7 +192,6 @@ async fn success_fixed_probability() {
         .claim_pack(
             &mut context,
             &edition_authority,
-            &voucher_edition.token.pubkey(),
             &voucher_edition.mint.pubkey(),
             &test_pack_card.token_account.pubkey(),
             &card_master_edition.pubkey,
@@ -358,7 +357,6 @@ async fn success_max_supply_probability() {
         .claim_pack(
             &mut context,
             &edition_authority,
-            &voucher_edition.token.pubkey(),
             &voucher_edition.mint.pubkey(),
             &test_pack_card.token_account.pubkey(),
             &card_master_edition.pubkey,
@@ -595,7 +593,6 @@ async fn fail_wrong_user_wallet() {
         AccountMeta::new_readonly(test_pack_set.keypair.pubkey(), false),
         AccountMeta::new(proving_process, false),
         AccountMeta::new(malicious_user.pubkey(), true),
-        AccountMeta::new_readonly(voucher_edition.token.pubkey(), false),
         AccountMeta::new_readonly(program_authority, false),
         AccountMeta::new(pack_card, false),
         AccountMeta::new(test_pack_card.token_account.pubkey(), false),
@@ -628,7 +625,13 @@ async fn fail_wrong_user_wallet() {
 
     let tx_result = context.banks_client.process_transaction(tx).await;
 
-    assert_custom_error!(tx_result.unwrap_err(), NFTPacksError::WrongVoucherOwner, 0);
+    assert_transport_error!(
+        tx_result.unwrap_err(),
+        TransportError::TransactionError(TransactionError::InstructionError(
+            0,
+            InstructionError::InvalidArgument
+        ))
+    );
 }
 
 #[tokio::test]
@@ -762,7 +765,6 @@ async fn fail_claim_twice() {
         .claim_pack(
             &mut context,
             &edition_authority,
-            &voucher_edition.token.pubkey(),
             &voucher_edition.mint.pubkey(),
             &test_pack_card.token_account.pubkey(),
             &card_master_edition.pubkey,
@@ -804,7 +806,6 @@ async fn fail_claim_twice() {
             &metaplex_nft_packs::id(),
             &test_pack_set.keypair.pubkey(),
             &edition_authority.pubkey(),
-            &voucher_edition.token.pubkey(),
             &voucher_edition.mint.pubkey(),
             &test_pack_card.token_account.pubkey(),
             &new_metadata_pubkey,

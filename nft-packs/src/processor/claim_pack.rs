@@ -12,12 +12,10 @@ use metaplex_token_metadata::state::{MasterEditionV2, Metadata};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    program_option::COption,
     program_pack::Pack,
     pubkey::Pubkey,
     sysvar::{rent::Rent, Sysvar},
 };
-use spl_token::state::Account;
 
 /// Process ClaimPack instruction
 pub fn claim_pack(
@@ -29,7 +27,6 @@ pub fn claim_pack(
     let pack_set_account = next_account_info(account_info_iter)?;
     let proving_process_account = next_account_info(account_info_iter)?;
     let user_wallet_account = next_account_info(account_info_iter)?;
-    let user_voucher_token_account = next_account_info(account_info_iter)?;
     let program_authority_account = next_account_info(account_info_iter)?;
     let pack_card_account = next_account_info(account_info_iter)?;
     let user_token_account = next_account_info(account_info_iter)?;
@@ -58,6 +55,7 @@ pub fn claim_pack(
     let mut proving_process = ProvingProcess::unpack(&proving_process_account.data.borrow_mut())?;
     let ClaimPackArgs { index } = args;
 
+    assert_account_key(user_wallet_account, &proving_process.wallet_key)?;
     assert_account_key(pack_set_account, &proving_process.pack_set)?;
 
     // Increment total redeemed cards
@@ -66,21 +64,6 @@ pub fn claim_pack(
     // Check if cards are exhausted
     if pack_set.allowed_amount_to_redeem == proving_process.cards_redeemed {
         proving_process.is_exhausted = true;
-    }
-
-    let user_token_acc = Account::unpack(&user_voucher_token_account.data.borrow_mut())?;
-    if user_token_acc.mint != proving_process.voucher_mint {
-        return Err(NFTPacksError::WrongEditionMint.into());
-    }
-
-    if user_token_acc.owner != *user_wallet_account.key {
-        if let COption::Some(delegated) = user_token_acc.delegate {
-            if user_token_acc.delegated_amount == 0 || delegated != *user_wallet_account.key {
-                return Err(NFTPacksError::WrongVoucherOwner.into());
-            }
-        } else {
-            return Err(NFTPacksError::WrongVoucherOwner.into());
-        }
     }
 
     // Validate PackCard
