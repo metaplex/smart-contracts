@@ -1,8 +1,8 @@
 # Smart Contracts
 
-The collection of [metaplex](https://metaplex.com) on-chain programs (aka smart contracts)
+This repo contains smart contracts that are new, incubating or derivative of the main metaplex specification. The battle tested, specification contracts are stored and maintained by the Metaplex Foundation [metaplex-foundation](https://github.com/metaplex-foundation/metaplex/tree/master/rust)
 
-> Many programs currently reside in the [metaplex-foundation](https://github.com/metaplex-foundation/metaplex/tree/master/rust) repository but most will be moving here.
+> Some of the programs living in [metaplex-foundation](https://github.com/metaplex-foundation/metaplex/tree/master/rust) will be moved here if they arent core to the metaplex protocol.
 
 ### Programs
 
