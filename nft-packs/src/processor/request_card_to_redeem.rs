@@ -256,6 +256,7 @@ pub fn get_proving_process_data<'a>(
 
             // Initialize
             data.init(InitProvingProcessParams {
+                wallet_key: *user_wallet.key,
                 voucher_mint: *voucher_mint.key,
                 pack_set: *pack_set,
             });

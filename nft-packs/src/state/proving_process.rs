@@ -41,6 +41,7 @@ impl ProvingProcess {
     /// Initialize a ProvingProcess
     pub fn init(&mut self, params: InitProvingProcessParams) {
         self.account_type = AccountType::ProvingProcess;
+        self.wallet_key = params.wallet_key;
         self.voucher_mint = params.voucher_mint;
         self.pack_set = params.pack_set;
         self.cards_to_redeem = BTreeMap::new();
@@ -49,6 +50,8 @@ impl ProvingProcess {
 
 /// Initialize a ProvingProcess params
 pub struct InitProvingProcessParams {
+    /// User wallet key
+    pub wallet_key: Pubkey,
     /// Voucher mint
     pub voucher_mint: Pubkey,
     /// Pack set

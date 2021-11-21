@@ -186,7 +186,6 @@ pub enum NFTPacksInstruction {
     /// - read              pack_set
     /// - read, write       proving_process (PDA, ['proving', pack, user_wallet])
     /// - signer            user_wallet
-    /// - read              user_voucher_token
     /// - read, write       pack_card (PDA, ['card', pack, index])
     /// - write             user_token_acc (user token account ot hold new minted edition)
     /// - read              new_metadata_acc
@@ -450,7 +449,6 @@ pub fn claim_pack(
     program_id: &Pubkey,
     pack_set: &Pubkey,
     user_wallet: &Pubkey,
-    user_voucher_token: &Pubkey,
     voucher_mint: &Pubkey,
     user_token: &Pubkey,
     new_metadata: &Pubkey,
@@ -487,7 +485,6 @@ pub fn claim_pack(
         AccountMeta::new_readonly(*pack_set, false),
         AccountMeta::new(proving_process, false),
         AccountMeta::new(*user_wallet, true),
-        AccountMeta::new_readonly(*user_voucher_token, false),
         AccountMeta::new_readonly(program_authority, false),
         AccountMeta::new(pack_card, false),
         AccountMeta::new(*user_token, false),
