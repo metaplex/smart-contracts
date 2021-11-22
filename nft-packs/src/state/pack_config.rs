@@ -67,31 +67,43 @@ impl PackConfig {
 
     /// Change weight
     pub fn change_weight(&mut self, index: u32, new_value: u32) -> Result<(), ProgramError> {
-        // using unwrap not safe but it shouldn't panic
-        // TODO: add new error
-        let idx = self.weights.iter().position(|x| x.0 == index).unwrap();
+        let idx = self
+            .weights
+            .iter()
+            .position(|x| x.0 == index)
+            .ok_or(NFTPacksError::InvalidWeightPosition)?;
+
         if let Some(elem) = self.weights.get_mut(idx) {
             *elem = (elem.0, new_value, elem.2);
         }
+
         if idx != self.weights.len() - 1 {
             let next_value_idx = (idx as u32).error_increment()? as usize;
-            // TODO: add new error
-            let next_value = self.weights.get_mut(next_value_idx).unwrap();
+            let next_value = self
+                .weights
+                .get_mut(next_value_idx)
+                .ok_or(NFTPacksError::InvalidWeightPosition)?;
+
             if next_value.1 > new_value {
                 self.weights.swap(next_value_idx, index as usize);
             }
         }
+
         Ok(())
     }
 
     /// Change supply
     pub fn change_supply(&mut self, index: u32, new_value: u32) -> Result<(), ProgramError> {
-        // using unwrap not safe but it shouldn't panic
-        // TODO: add new error
-        let idx = self.weights.iter().position(|x| x.0 == index).unwrap();
+        let idx = self
+            .weights
+            .iter()
+            .position(|x| x.0 == index)
+            .ok_or(NFTPacksError::InvalidWeightPosition)?;
+
         if let Some(elem) = self.weights.get_mut(idx) {
             *elem = (elem.0, elem.1, new_value);
         }
+
         Ok(())
     }
 
