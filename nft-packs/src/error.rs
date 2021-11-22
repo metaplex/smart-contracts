@@ -171,6 +171,10 @@ pub enum NFTPacksError {
     /// User can't redeem this card
     #[error("User can't redeem this card")]
     UserCantRedeemThisCard,
+
+    /// Invalid weight position
+    #[error("Invalid weight position")]
+    InvalidWeightPosition,
 }
 
 impl From<NFTPacksError> for ProgramError {
