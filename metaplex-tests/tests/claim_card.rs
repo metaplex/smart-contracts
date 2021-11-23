@@ -389,7 +389,6 @@ async fn success_max_supply_probability() {
 
 #[tokio::test]
 async fn success_claim_two_indexes() {
-    // TODO: Continue 2 indexes test with RequestCardToReedem
     let mut context = nft_packs_program_test().start_with_context().await;
 
     let name = [7; 32];
@@ -518,6 +517,7 @@ async fn success_claim_two_indexes() {
 
     test_pack_set.activate(&mut context).await.unwrap();
     test_pack_set.clean_up(&mut context).await.unwrap();
+
     let new_mint = Keypair::new();
     let new_mint_token_acc = Keypair::new();
 
@@ -539,6 +539,9 @@ async fn success_claim_two_indexes() {
         .await
         .unwrap();
 
+    context.warp_to_slot(5).unwrap();
+    test_pack_set.clean_up(&mut context).await.unwrap();
+
     test_pack_set
         .request_card_for_redeem(
             &mut context,
@@ -546,36 +549,52 @@ async fn success_claim_two_indexes() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &Some(voucher_edition.token.pubkey()),
+            &None,
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
         .await
         .unwrap();
 
-    context.warp_to_slot(5).unwrap();
-    test_pack_set.clean_up(&mut context).await.unwrap();
+    let (proving_process_key, _) = find_proving_process_program_address(
+        &metaplex_nft_packs::id(),
+        &test_pack_set.keypair.pubkey(),
+        &edition_authority.pubkey(),
+        &voucher_edition.mint.pubkey(),
+    );
 
-    let err = test_pack_set
-        .claim_pack(
-            &mut context,
-            &edition_authority,
-            &voucher_edition.mint.pubkey(),
-            &test_pack_card.token_account.pubkey(),
-            &card_master_edition.pubkey,
-            &new_mint,
-            &new_mint_token_acc,
-            &edition_authority,
-            &card_metadata.pubkey,
-            &card_master_edition.mint_pubkey,
-            &test_randomness_oracle.keypair.pubkey(),
-            1,
-        )
-        .await;
+    let proving_process_data = get_account(&mut context, &proving_process_key).await;
+    let proving_process = ProvingProcess::unpack_from_slice(&proving_process_data.data).unwrap();
 
-    if err.is_err() {
-        assert_custom_error!(err.unwrap_err(), NFTPacksError::UserCantRedeemThisCard, 0);
+    for (index, _value) in proving_process.cards_to_redeem {
+        test_pack_set
+            .claim_pack(
+                &mut context,
+                &edition_authority,
+                &voucher_edition.mint.pubkey(),
+                &test_pack_card.token_account.pubkey(),
+                &card_master_edition.pubkey,
+                &new_mint,
+                &new_mint_token_acc,
+                &edition_authority,
+                &card_metadata.pubkey,
+                &card_master_edition.mint_pubkey,
+                &test_randomness_oracle.keypair.pubkey(),
+                index,
+            )
+            .await
+            .unwrap();
+
+        break;
     }
+
+    let card_master_edition = card_master_edition.get_data(&mut context).await;
+    let card_master_edition1 = card_master_edition1.get_data(&mut context).await;
+
+    assert_eq!(
+        card_master_edition.supply == 1 || card_master_edition1.supply == 1,
+        true
+    );
 }
 
 #[tokio::test]
