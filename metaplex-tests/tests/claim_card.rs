@@ -177,7 +177,7 @@ async fn success_fixed_probability() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -346,7 +346,7 @@ async fn success_max_supply_probability() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -532,7 +532,7 @@ async fn success_claim_two_indexes() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -546,7 +546,7 @@ async fn success_claim_two_indexes() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -697,7 +697,7 @@ async fn success_claim_after_redeem_end_date() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -851,7 +851,7 @@ async fn fail_wrong_user_wallet() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -1104,7 +1104,7 @@ async fn fail_claim_twice() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )

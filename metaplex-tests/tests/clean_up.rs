@@ -158,7 +158,7 @@ async fn success_clean_up_change() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )

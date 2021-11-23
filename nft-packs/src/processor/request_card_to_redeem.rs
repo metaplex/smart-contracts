@@ -43,19 +43,23 @@ pub fn request_card_for_redeem(
     let voucher_account = next_account_info(account_info_iter)?;
     let proving_process_account = next_account_info(account_info_iter)?;
     let user_wallet_account = next_account_info(account_info_iter)?;
-    let user_token_account = next_account_info(account_info_iter)?;
     let randomness_oracle_account = next_account_info(account_info_iter)?;
     let clock_info = next_account_info(account_info_iter)?;
     let clock = Clock::from_account_info(clock_info)?;
     let rent_info = next_account_info(account_info_iter)?;
     let rent = &Rent::from_account_info(rent_info)?;
+    let _spl_token_account_info = next_account_info(account_info_iter)?;
+    let _system_account_info = next_account_info(account_info_iter)?;
+    let user_token_account = next_account_info(account_info_iter).ok();
 
     // Validate owners
     assert_owned_by(randomness_oracle_account, &randomness_oracle_program::id())?;
     assert_owned_by(pack_set_account, program_id)?;
     assert_owned_by(store_account, &metaplex::id())?;
     assert_owned_by(edition_mint_account, &spl_token::id())?;
-    assert_owned_by(user_token_account, &spl_token::id())?;
+    if let Some(user_token_account) = user_token_account {
+        assert_owned_by(user_token_account, &spl_token::id())?;
+    }
     assert_owned_by(voucher_account, program_id)?;
     assert_owned_by(pack_config_account, program_id)?;
 
@@ -87,7 +91,7 @@ pub fn request_card_for_redeem(
         program_id,
         proving_process_account,
         user_wallet_account,
-        user_token_account,
+        &user_token_account,
         edition_mint_account,
         pack_set_account.key,
         proving_process_seeds,
@@ -106,7 +110,6 @@ pub fn request_card_for_redeem(
     )?;
 
     let voucher = PackVoucher::unpack(&voucher_account.data.borrow_mut())?;
-
     assert_account_key(pack_set_account, &voucher.pack_set)?;
 
     assert_derivation(
@@ -121,23 +124,24 @@ pub fn request_card_for_redeem(
     )?;
 
     let edition = Edition::from_account_info(edition_data_account)?;
-
     if edition.parent != voucher.master {
         return Err(NFTPacksError::WrongEdition.into());
     }
 
-    let user_token_acc = Account::unpack(&user_token_account.data.borrow_mut())?;
-    if user_token_acc.mint != *edition_mint_account.key {
-        return Err(NFTPacksError::WrongEditionMint.into());
-    }
+    if let Some(user_token_account) = user_token_account {
+        let user_token_acc = Account::unpack(&user_token_account.data.borrow_mut())?;
+        if user_token_acc.mint != *edition_mint_account.key {
+            return Err(NFTPacksError::WrongEditionMint.into());
+        }
 
-    if user_token_acc.owner != *user_wallet_account.key {
-        if let COption::Some(delegated) = user_token_acc.delegate {
-            if user_token_acc.delegated_amount == 0 || delegated != *user_wallet_account.key {
+        if user_token_acc.owner != *user_wallet_account.key {
+            if let COption::Some(delegated) = user_token_acc.delegate {
+                if user_token_acc.delegated_amount == 0 || delegated != *user_wallet_account.key {
+                    return Err(NFTPacksError::WrongVoucherOwner.into());
+                }
+            } else {
                 return Err(NFTPacksError::WrongVoucherOwner.into());
             }
-        } else {
-            return Err(NFTPacksError::WrongVoucherOwner.into());
         }
     }
 
@@ -147,7 +151,6 @@ pub fn request_card_for_redeem(
     pack_set.assert_activated()?;
 
     let current_timestamp = clock.unix_timestamp as u64;
-
     if current_timestamp < pack_set.redeem_start_date {
         return Err(NFTPacksError::WrongRedeemDate.into());
     }
@@ -158,13 +161,12 @@ pub fn request_card_for_redeem(
         }
     }
 
-    // check if user already get all the card indexes
+    // Check if user already get all the card indexes
     if (proving_process.cards_to_redeem.len() as u32) == pack_set.allowed_amount_to_redeem {
         return Err(NFTPacksError::UserRedeemedAllCards.into());
     }
 
     let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
-
     let weight_sum = if pack_set.distribution_type == PackDistributionType::MaxSupply {
         pack_set.total_editions
     } else {
@@ -174,7 +176,7 @@ pub fn request_card_for_redeem(
     let (next_card_to_redeem, value, max_supply) =
         pack_config.select_weighted_random(random_value, weight_sum)?;
 
-    // set false means card isn't redeemed yet
+    // Set false means card isn't redeemed yet
     proving_process
         .cards_to_redeem
         .insert(next_card_to_redeem, false);
@@ -227,7 +229,7 @@ pub fn get_proving_process_data<'a>(
     program_id: &Pubkey,
     account_info: &AccountInfo<'a>,
     user_wallet: &AccountInfo<'a>,
-    user_token: &AccountInfo<'a>,
+    user_token: &Option<&AccountInfo<'a>>,
     voucher_mint: &AccountInfo<'a>,
     pack_set: &Pubkey,
     signers_seeds: &[&[u8]],
@@ -240,7 +242,11 @@ pub fn get_proving_process_data<'a>(
         Ok(data) => Ok(data),
         Err(_) => {
             // Burn PackVoucher tokens
-            burn_pack_voucher(user_token, user_wallet, voucher_mint)?;
+            burn_pack_voucher(
+                user_token.ok_or(ProgramError::NotEnoughAccountKeys)?,
+                user_wallet,
+                voucher_mint,
+            )?;
 
             // Create ProvingProcess account on-chain
             create_account::<ProvingProcess>(

@@ -336,7 +336,7 @@ impl TestPackSet {
         edition: &Pubkey,
         edition_mint: &Pubkey,
         user_wallet: &Keypair,
-        user_token_acc: &Pubkey,
+        user_token_acc: &Option<Pubkey>,
         random_oracle: &Pubkey,
         voucher_index: u32,
     ) -> transport::Result<()> {
@@ -367,7 +367,7 @@ impl TestPackSet {
         edition: &Pubkey,
         edition_mint: &Pubkey,
         user_wallet: &Keypair,
-        user_token_acc: &Pubkey,
+        user_token_acc: &Option<Pubkey>,
         random_oracle: &Pubkey,
         voucher_index: u32,
     ) -> transport::Result<()> {

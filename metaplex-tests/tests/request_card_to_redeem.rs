@@ -164,7 +164,7 @@ async fn success() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -309,6 +309,7 @@ async fn success_two_cards() {
 
     test_pack_set.activate(&mut context).await.unwrap();
     test_pack_set.clean_up(&mut context).await.unwrap();
+
     let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle.update(&mut context).await.unwrap();
@@ -320,7 +321,7 @@ async fn success_two_cards() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -457,7 +458,7 @@ async fn fail_request_without_clean_up() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -474,7 +475,7 @@ async fn fail_request_without_clean_up() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -632,7 +633,7 @@ async fn fail_request_after_end_date() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
@@ -785,7 +786,7 @@ async fn fail_request_with_invalid_voucher() {
             &voucher_edition.new_edition_pubkey,
             &voucher_edition.mint.pubkey(),
             &edition_authority,
-            &voucher_edition.token.pubkey(),
+            &Some(voucher_edition.token.pubkey()),
             &test_randomness_oracle.keypair.pubkey(),
             1,
         )
