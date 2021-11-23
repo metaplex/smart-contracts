@@ -2,6 +2,7 @@
 members = [
   "nft-packs",
   "metaplex-tests",
+  "programs/*"
 ]
 exclude = [
 ]
