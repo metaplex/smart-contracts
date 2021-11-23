@@ -1,6 +1,6 @@
 use crate::{formula_objects::Formula, token_utils, AuthorityType, Ingredient, Item};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, set_authority, SetAuthority};
+use anchor_spl::token::{self, SetAuthority, Token, set_authority};
 
 #[derive(Accounts)]
 #[instruction(
@@ -23,8 +23,7 @@ pub struct CreateFormula<'info> {
 
     // Misc accounts
     pub system_program: Program<'info, System>,
-    #[account(constraint = token_program.key == &token::ID)]
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
 
     pub rent: Sysvar<'info, Rent>,
 }
@@ -78,7 +77,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
                 to: program_master_token_acct.clone(),
                 authority: ctx.accounts.authority.to_account_info(),
             };
-            let cpi_ctx = CpiContext::new(ctx.accounts.token_program.clone(), cpi_accounts);
+            let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info().clone(), cpi_accounts);
             token::transfer(cpi_ctx, 1)?;
         } else {
             // If the item isn't a master edition, simply transfer mint authority to the PDA
@@ -87,7 +86,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
                 current_authority: ctx.accounts.authority.to_account_info().clone(),
             };
 
-            let cpi_ctx = CpiContext::new(ctx.accounts.token_program.clone(), cpi_accounts);
+            let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info().clone(), cpi_accounts);
             set_authority(cpi_ctx, AuthorityType::MintTokens.into(), Some(pda_pubkey))?;
         }
     }

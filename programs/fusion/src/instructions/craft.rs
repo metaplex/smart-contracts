@@ -1,6 +1,6 @@
 use crate::{token_metadata_utils, ErrorCode, Formula};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, burn, mint_to, Burn, MintTo};
+use anchor_spl::token::{self, Burn, MintTo, Token, burn, mint_to};
 
 #[derive(Accounts)]
 #[instruction(bump: u8)]
@@ -16,8 +16,7 @@ pub struct Craft<'info> {
     )]
     pub pda_auth: AccountInfo<'info>,
 
-    #[account(constraint = token_program.key == &token::ID)]
-    pub token_program: AccountInfo<'info>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }
@@ -62,7 +61,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         // If burn is true, burn the tokens
         if ingredient.burn_on_craft {
             let cpi_ctx = CpiContext::new(
-                ctx.accounts.token_program.clone(),
+                ctx.accounts.token_program.to_account_info().clone(),
                 Burn {
                     mint: ingredient_mint.clone(),
                     to: ingredient_token.clone(),
@@ -97,7 +96,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
             let output_item_mint = next_account_info(accounts_info_iter)?;
 
             let cpi_ctx = CpiContext::new_with_signer(
-                ctx.accounts.token_program.clone(),
+                ctx.accounts.token_program.to_account_info().clone(),
                 MintTo {
                     mint: output_item_mint.clone(),
                     authority: ctx.accounts.pda_auth.clone(),
