@@ -176,10 +176,19 @@ pub fn request_card_for_redeem(
     let (next_card_to_redeem, value, max_supply) =
         pack_config.select_weighted_random(random_value, weight_sum)?;
 
-    // Set false means card isn't redeemed yet
-    proving_process
+    // Increment if card is already redeemed
+    // Else insert new field
+    match proving_process
         .cards_to_redeem
-        .insert(next_card_to_redeem, false);
+        .get_mut(&next_card_to_redeem)
+    {
+        Some(value) => *value = value.error_increment()?,
+        None => {
+            proving_process
+                .cards_to_redeem
+                .insert(next_card_to_redeem, 1);
+        }
+    };
 
     match pack_set.distribution_type {
         PackDistributionType::MaxSupply => {

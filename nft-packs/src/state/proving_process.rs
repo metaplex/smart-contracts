@@ -28,7 +28,7 @@ pub struct ProvingProcess {
     ///
     pub cards_redeemed: u32,
     /// BTreeMap with cards to redeem and statuses if it's already redeemed
-    pub cards_to_redeem: BTreeMap<u32, bool>,
+    pub cards_to_redeem: BTreeMap<u32, u32>,
 }
 
 impl ProvingProcess {
