@@ -22,15 +22,15 @@ pub use pack_card::TestPackCard;
 pub use pack_set::TestPackSet;
 pub use pack_voucher::TestPackVoucher;
 pub use randomness_oracle::TestRandomnessOracle;
-pub use user::*;
-pub use vault::TestVault;
-
 use solana_program_test::*;
 use solana_sdk::{
     account::Account, program_pack::Pack, pubkey::Pubkey, signature::Signer,
     signer::keypair::Keypair, system_instruction, transaction::Transaction, transport,
 };
 use spl_token::state::Mint;
+use std::time;
+pub use user::*;
+pub use vault::TestVault;
 
 pub fn nft_packs_program_test<'a>() -> ProgramTest {
     let mut program = ProgramTest::new("metaplex_nft_packs", metaplex_nft_packs::id(), None);
@@ -67,6 +67,32 @@ pub async fn get_account(context: &mut ProgramTestContext, pubkey: &Pubkey) -> A
 pub async fn get_mint(context: &mut ProgramTestContext, pubkey: &Pubkey) -> Mint {
     let account = get_account(context, pubkey).await;
     Mint::unpack(&account.data).unwrap()
+}
+
+/// Will warp to next `N` slots until `Clock` program account `unix_timestamp` field matches current time + `duration`.
+pub async fn warp_sleep(context: &mut ProgramTestContext, duration: time::Duration) {
+    let current_time = context
+        .banks_client
+        .get_clock()
+        .await
+        .unwrap()
+        .unix_timestamp;
+    let end_time = current_time + duration.as_millis() as i64;
+
+    loop {
+        let last_time = context
+            .banks_client
+            .get_clock()
+            .await
+            .unwrap()
+            .unix_timestamp;
+        if last_time >= end_time {
+            break;
+        }
+
+        let current_slot = context.banks_client.get_root_slot().await.unwrap();
+        context.warp_to_slot(current_slot + 500).unwrap();
+    }
 }
 
 pub async fn mint_tokens(

@@ -282,11 +282,11 @@ pub enum NFTPacksInstruction {
     /// - read                     pack_voucher
     /// - read, write              proving_process (PDA, ['proving', pack, user_wallet])
     /// - signer                   user_wallet
-    /// - read                     user_token_account
     /// - read                     randomness_oracle
     /// - read                     clock
     /// - read                     rent
     /// - read                     system_program
+    /// - read                     user_token_account optional
     ///
     /// Parameters:
     /// - index    u32
@@ -619,7 +619,7 @@ pub fn request_card_for_redeem(
     edition: &Pubkey,
     edition_mint: &Pubkey,
     user_wallet: &Pubkey,
-    user_token_acc: &Pubkey,
+    user_token_acc: &Option<Pubkey>,
     random_oracle: &Pubkey,
     index: u32,
 ) -> Instruction {
@@ -630,7 +630,7 @@ pub fn request_card_for_redeem(
 
     let (pack_voucher, _) = find_pack_voucher_program_address(program_id, pack_set, index);
 
-    let accounts = vec![
+    let mut accounts = vec![
         AccountMeta::new(*pack_set, false),
         AccountMeta::new(pack_config, false),
         AccountMeta::new_readonly(*store, false),
@@ -639,13 +639,15 @@ pub fn request_card_for_redeem(
         AccountMeta::new_readonly(pack_voucher, false),
         AccountMeta::new(proving_process, false),
         AccountMeta::new(*user_wallet, true),
-        AccountMeta::new(*user_token_acc, false),
         AccountMeta::new_readonly(*random_oracle, false),
         AccountMeta::new_readonly(sysvar::clock::id(), false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
         AccountMeta::new_readonly(spl_token::id(), false),
         AccountMeta::new_readonly(system_program::id(), false),
     ];
+    if let Some(user_token_account) = user_token_acc {
+        accounts.push(AccountMeta::new(*user_token_account, false))
+    }
 
     Instruction::new_with_borsh(
         *program_id,

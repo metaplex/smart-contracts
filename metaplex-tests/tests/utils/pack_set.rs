@@ -3,7 +3,9 @@ use metaplex_nft_packs::{
     instruction::{self, EditPackSetArgs},
     state::PackSet,
 };
-use solana_program::{program_pack::Pack, pubkey::Pubkey, system_instruction};
+use solana_program::{
+    instruction::AccountMeta, program_pack::Pack, pubkey::Pubkey, system_instruction,
+};
 use solana_program_test::*;
 use solana_sdk::{
     signature::Signer, signer::keypair::Keypair, transaction::Transaction, transport,
@@ -334,7 +336,7 @@ impl TestPackSet {
         edition: &Pubkey,
         edition_mint: &Pubkey,
         user_wallet: &Keypair,
-        user_token_acc: &Pubkey,
+        user_token_acc: &Option<Pubkey>,
         random_oracle: &Pubkey,
         voucher_index: u32,
     ) -> transport::Result<()> {
@@ -350,6 +352,42 @@ impl TestPackSet {
                 random_oracle,
                 voucher_index,
             )],
+            Some(&context.payer.pubkey()),
+            &[&context.payer, user_wallet],
+            context.last_blockhash,
+        );
+
+        context.banks_client.process_transaction(tx).await
+    }
+
+    pub async fn request_card_for_redeem_fake_voucher(
+        &self,
+        context: &mut ProgramTestContext,
+        store: &Pubkey,
+        edition: &Pubkey,
+        edition_mint: &Pubkey,
+        user_wallet: &Keypair,
+        user_token_acc: &Option<Pubkey>,
+        random_oracle: &Pubkey,
+        voucher_index: u32,
+    ) -> transport::Result<()> {
+        let mut ix = instruction::request_card_for_redeem(
+            &metaplex_nft_packs::id(),
+            &self.keypair.pubkey(),
+            store,
+            edition,
+            edition_mint,
+            &user_wallet.pubkey(),
+            user_token_acc,
+            random_oracle,
+            voucher_index,
+        );
+
+        let fake_pack_voucher = Pubkey::new_unique();
+        ix.accounts[5] = AccountMeta::new_readonly(fake_pack_voucher, false);
+
+        let tx = Transaction::new_signed_with_payer(
+            &[ix],
             Some(&context.payer.pubkey()),
             &[&context.payer, user_wallet],
             context.last_blockhash,
