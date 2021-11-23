@@ -86,11 +86,8 @@ pub fn claim_pack(
     assert_account_key(program_authority_account, &program_authority_key)?;
 
     if let Some(card_redeemed) = proving_process.cards_to_redeem.get_mut(&index) {
-        if *card_redeemed {
-            return Err(NFTPacksError::CardAlreadyRedeemed.into());
-        }
-        // set true means card is already redeemed
-        *card_redeemed = true;
+        // Decrement because current card already redeemed
+        *card_redeemed = card_redeemed.error_decrement()?;
     } else {
         return Err(NFTPacksError::UserCantRedeemThisCard.into());
     }

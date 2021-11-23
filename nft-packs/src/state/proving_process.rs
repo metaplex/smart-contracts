@@ -28,7 +28,7 @@ pub struct ProvingProcess {
     ///
     pub cards_redeemed: u32,
     /// BTreeMap with cards to redeem and statuses if it's already redeemed
-    pub cards_to_redeem: BTreeMap<u32, bool>,
+    pub cards_to_redeem: BTreeMap<u32, u32>,
 }
 
 impl ProvingProcess {
@@ -61,9 +61,11 @@ pub struct InitProvingProcessParams {
 impl Sealed for ProvingProcess {}
 
 impl Pack for ProvingProcess {
-    // 1 + 32 + 1 + 32 + 32 + 4 + BTreeMap size for 100 cards(500)
-    // create account for max pack size
-    const LEN: usize = 602;
+    // 1 + 32 + 1 + 32 + 32 + 4 + BTreeMap size for 100 cards(800)
+    // When calculating size for custom data structures like `BTreeMap` does not
+    // include structure header size(in that case is always 24-bytes).
+    // Calculate size for underlying(template) types only(u32 + u32 = 8bytes in this case).
+    const LEN: usize = 902;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;
