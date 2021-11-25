@@ -16,7 +16,7 @@ use solana_program::{
 pub struct PackConfig {
     /// account type - PackConfig
     pub account_type: AccountType,
-    /// weights; BTreeMap<u32 card_index, u32 either max_supply or weight, u32 max_supply for weighted cards>
+    /// weights; Vec<u32 card_index, u32 either max_supply or weight, u32 max_supply for weighted cards>
     pub weights: Vec<(u32, u32, u32)>,
     /// action instruction has to do
     pub action_to_do: CleanUpActions,
