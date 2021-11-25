@@ -16,8 +16,8 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
     - every card account is PDA with seeds [pack_key, "card", index]
 - Add voucher
     - save MasterEdition data(keys) so we can match Editions with this Master when users will open a pack
-    - pack can have multiple different vouchers and every voucher has the same value and gives users the same amounts of attempts to redeem cards
-    - voucher is Edition in terms of Metaplex but in terms of nft-packs program it's PDA account with seeds [pack_key, "voucher"] which stores some data
+    - pack can have multiple different vouchers and every voucher has the same value and gives users the same amounts of cards from the pack
+    - voucher is Edition in terms of Metaplex but in terms of nft-packs program it's PDA account with seeds [pack_key, "voucher", index] which stores some data
     - we can add only voucher which we are own
     - to sum up, when we add voucher to the pack we save MasterEdition key to the pack and every user who has Edition from that MasterEdition owns a voucher for created pack and can open it
 - Activate
@@ -25,14 +25,19 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
     - users can start to open a pack (using `RequestCardForRedeem` and `ClaimPack` methods)
 - Deactivate
     - when pack is deactivated users can't interact with it and admin can change data
+- CleanUp
+    - sort weights Vec which is stored in PackConfig account
 - Request card for redeem
-    - user calls this instruction to receive index of card which he can try to redeem next(1 of n)
+    - user calls this instruction to receive index of card which he can redeem
+    - program burns user's voucher token account
+    - program is using RandomOracle program to count probability to decide which card user will receive
+    - probability is calculating using weighted list from PackConfig account
     - index of next card to redeem is written to ProvingProcess account
     - ProvingProcess is a PDA account with seeds [pack, "proving", voucher_mint_key]
+    - once user call this instruction weights Vec should be sorted with `CleanUp` instruction
 - Claim
     - user call this instruction after they receive a card index from `Request card for redeem`
-    - program is using RandomOracle program to count probability to decide will user receive Edition from this card or not
-    - after this operation, program saves info about which voucher was used to claim a card
+    - program mints new Edition to user wallet
 - Edit pack
     - can be called only if pack is in deactivated state
     - allows changing pack `name`, `description`, `URI`(pack wallpaper) and `mutable` fields
@@ -74,7 +79,7 @@ Supports creation of "mystery" packages of NFTs that are not revealed until afte
     
 **PackCard**
 
-PDA with seeds [pack_key, 'card', index]
+PDA with seeds ['card', pack_key, index]
 
 |Parameter|Type|Description|
 |--------|----------|--------------|
@@ -83,11 +88,11 @@ PDA with seeds [pack_key, 'card', index]
 |metadata|	Pubkey|	Metadata account|
 |token_account|	Pubkey|	Program token account which holds MasterEdition token|
 |max_supply|	u32|	How many editions this card can mint|
-|weight|	u32|	Card weight. Uses in probability calculation for fixed and unlimited distribution types|
+|weight|	u16|	Card weight. Uses in probability calculation for fixed and unlimited distribution types|
     
 **PackVoucher**
 
-PDA with seeds [pack_key, 'voucher', index]
+PDA with seeds ['voucher', pack_key, index]
 
 |Parameter|Type|Description|
 |--------|----------|--------------|
@@ -97,14 +102,25 @@ PDA with seeds [pack_key, 'voucher', index]
     
 **ProvingProcess**
 
-PDA with seeds [pack_key, 'proving', voucher_edition_mint]
+PDA with seeds ['proving', pack_key, voucher_edition_mint]
 
 |Parameter|Type|Description|
 |--------|----------|--------------|
+|wallet_key|	Pubkey| User wallet key	|
+|is_exhausted|	bool| Is there left any card in voucher	|
 |pack_set|	Pubkey| Pack set key	|
 |voucher_mint|	Pubkey| Voucher mint	|
-|next_card_to_redeem|	u32|	Index of next card to redeem|
 |cards_redeemed|	u32|	How many cards user already redeemed|
+|cards_to_redeem|	BTreeMap(u32, u32)|	BTreeMap with cards to redeem and statuses if it's already redeemed|
+
+**PackConfig**
+
+PDA with seeds ['config', pack_key]
+
+|Parameter|Type|Description|
+|--------|----------|--------------|
+|weights|	Vec<(u32, u32, u32)>| Weights Vec(u32 card_index, u32 either max_supply or weight, u32 max_supply for weighted cards)	|
+|action_to_do| enum[change, sort, none] | Action `CleanUp` instruction has to do |
     
 
 ## Distribution types
