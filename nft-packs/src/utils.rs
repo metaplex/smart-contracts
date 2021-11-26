@@ -1,6 +1,6 @@
 //! Program utils
 
-use crate::{error::NFTPacksError, math::SafeMath, state::MAX_LAG_SLOTS};
+use crate::{error::NFTPacksError, math::SafeMath, state::{MAX_LAG_SLOTS, ProvingProcess}};
 use solana_program::{
     account_info::AccountInfo,
     clock::Clock,
@@ -14,6 +14,7 @@ use solana_program::{
 };
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
+use borsh::BorshSerialize;
 
 /// Assert uninitialized
 pub fn assert_uninitialized<T: IsInitialized>(account: &T) -> ProgramResult {
@@ -246,6 +247,7 @@ pub fn empty_account_balance(
 /// get random value from oracle account
 pub fn get_random_oracle_value(
     randomness_oracle_account: &AccountInfo,
+    proving_process: &ProvingProcess,
     clock: &Clock,
 ) -> Result<u16, ProgramError> {
     let (oracle_random_value, slot) =
@@ -255,9 +257,10 @@ pub fn get_random_oracle_value(
         return Err(NFTPacksError::RandomOracleOutOfDate.into());
     }
 
-    // Hash random value from the oracle with current slot and receive new random u16
+    // Hash random value from the oracle with current slot and proving process data and receive new random u16
     let mut hasher = DefaultHasher::new();
     hasher.write(oracle_random_value.as_ref());
+    hasher.write(proving_process.try_to_vec()?.as_ref());
     hasher.write_u64(clock.slot);
 
     let mut random_value: [u8; 2] = [0u8; 2];
