@@ -166,7 +166,7 @@ pub fn request_card_for_redeem(
         return Err(NFTPacksError::UserRedeemedAllCards.into());
     }
 
-    let random_value = get_random_oracle_value(randomness_oracle_account, &clock)?;
+    let random_value = get_random_oracle_value(randomness_oracle_account, &proving_process, &clock)?;
     let weight_sum = if pack_set.distribution_type == PackDistributionType::MaxSupply {
         pack_set.total_editions
     } else {
