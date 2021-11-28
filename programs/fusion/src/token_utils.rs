@@ -11,7 +11,6 @@ pub fn create_master_token_account<'info>(
   rent: AccountInfo<'info>,
   system_program: AccountInfo<'info>,
 ) -> ProgramResult {
-  msg!("In token_utils");
   // derive account address from seeds
   let (master_token_acct, master_token_acct_nonce) = Pubkey::find_program_address(
     &[

@@ -83,7 +83,6 @@ pub fn handler<'a, 'b, 'c, 'info>(
     for item in formula.output_items.iter() {
         // handle case where the output Item is a master edition
         if item.is_master_edition {
-            msg!("Item is a master edition! Print that mother F@#!$");
             token_metadata_utils::mint_new_edition_cpi(
                 accounts_info_iter,
                 &ctx.accounts.authority.to_account_info(),
