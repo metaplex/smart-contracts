@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "nft-packs",
+  "metadata-collections",
   "metaplex-tests",
 ]
 exclude = [
