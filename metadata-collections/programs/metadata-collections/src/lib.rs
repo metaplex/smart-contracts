@@ -17,37 +17,18 @@ pub mod metadata_collections {
     Ok(())
   }
 
-  pub fn add_metadata(ctx: Context<AddMetadata>, metadata: Pubkey, index: u8) -> ProgramResult {
+  pub fn replace_metadata(ctx: Context<AddMetadata>, metadata: Vec<MetadataEntry>) -> ProgramResult {
     let page = &mut ctx.accounts.page;
 
-    page.metadata.insert(index.into(), metadata);
+    page.metadata = metadata.clone();
 
-    Ok(())
-  }
-
-  pub fn drop_metadata(ctx: Context<DropMetadata>, metadata: Pubkey) -> ProgramResult {
-    let page =&mut ctx.accounts.page;
-
-    page.metadata.retain(|key| key != &metadata);
-    Ok(())
-  }
-
-  pub fn swap_metadata(ctx: Context<SwapMetadata>, head: Pubkey, tail: Pubkey) -> ProgramResult {
-    let page = &mut ctx.accounts.page;
-    let previous = page.metadata.clone();
-    let head_index = previous.iter().position(|a| a == &head).unwrap();
-    let tail_index = previous.iter().position(|a| a == &tail).unwrap();
-
-    page.metadata[head_index] = tail;
-    page.metadata[tail_index] = head;
-    
     Ok(())
   }
 }
 
 #[derive(Accounts)]
 pub struct CreatePage<'info> {
-  #[account(init, payer = maintainer, space = 32 + 8 + 32*100)]
+  #[account(init, payer = maintainer, space = 8 + 32 + 8 + 4 + (8 + 32) * 30)]
   pub page: Account<'info, MetadataPage>,
   #[account(mut)]
   pub maintainer: Signer<'info>,
@@ -56,13 +37,6 @@ pub struct CreatePage<'info> {
 
 #[derive(Accounts)]
 pub struct AddMetadata<'info> {
-  #[account(mut, has_one = maintainer)]
-  pub page: Account<'info, MetadataPage>,
-  pub maintainer: Signer<'info>,
-}
-
-#[derive(Accounts)]
-pub struct DropMetadata<'info> {
   #[account(mut, has_one = maintainer)]
   pub page: Account<'info, MetadataPage>,
   pub maintainer: Signer<'info>,
@@ -79,5 +53,10 @@ pub struct SwapMetadata<'info> {
 pub struct MetadataPage {
   maintainer: Pubkey,
   position: u64,
-  metadata: Vec<Pubkey>,
+  metadata: Vec<MetadataEntry>,
+}
+
+#[derive(Clone, AnchorSerialize, AnchorDeserialize)]
+pub struct MetadataEntry {
+    pub address: Pubkey,
 }
