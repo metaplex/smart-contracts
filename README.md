@@ -1,3 +1,12 @@
+# This repo is going away do not depend on it
+
+
+
+
+
+
+
+
 # Smart Contracts
 
 This repo contains smart contracts that are new, incubating or derivative of the main metaplex specification. The battle tested, specification contracts are stored and maintained by the Metaplex Foundation [metaplex-foundation](https://github.com/metaplex-foundation/metaplex/tree/master/rust)
