@@ -40,6 +40,7 @@ impl TestPackSet {
         &self,
         context: &mut ProgramTestContext,
         args: instruction::InitPackSetArgs,
+        randomness_oracle: &Pubkey,
     ) -> transport::Result<()> {
         create_account::<PackSet>(context, &self.keypair, &metaplex_nft_packs::id()).await?;
 
@@ -56,6 +57,7 @@ impl TestPackSet {
                     &self.keypair.pubkey(),
                     &self.authority.pubkey(),
                     &self.store,
+                    randomness_oracle,
                     &self.minting_authority.pubkey(),
                     args,
                 ),
