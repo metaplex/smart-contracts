@@ -75,7 +75,7 @@ async fn success_fixed_probability() {
     let store_key = create_store(&mut context, &store_admin, true)
         .await
         .unwrap();
-    
+
     let mut test_randomness_oracle = TestRandomnessOracle::new();
     test_randomness_oracle.init(&mut context).await.unwrap();
 

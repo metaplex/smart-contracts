@@ -9,7 +9,8 @@ use num_traits::FromPrimitive;
 use solana_program::instruction::InstructionError;
 use solana_program_test::*;
 use solana_sdk::{
-    signer::keypair::Keypair, transaction::TransactionError, transport::TransportError, signature::Signer,
+    signature::Signer, signer::keypair::Keypair, transaction::TransactionError,
+    transport::TransportError,
 };
 use utils::*;
 

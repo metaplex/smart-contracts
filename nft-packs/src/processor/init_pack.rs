@@ -46,7 +46,9 @@ pub fn init_pack(
     let mut pack_set = PackSet::unpack_unchecked(&pack_set_account.data.borrow_mut())?;
 
     // make sure that random oracle account is already initialized
-    if random_oracle_account.data.borrow()[0] != randomness_oracle_program::state::AccountType::RandomnessOracle as u8 {
+    if random_oracle_account.data.borrow()[0]
+        != randomness_oracle_program::state::AccountType::RandomnessOracle as u8
+    {
         return Err(ProgramError::UninitializedAccount);
     }
 
