@@ -89,6 +89,8 @@ pub struct PackSet {
     pub redeem_start_date: u64,
     /// Date when pack set becomes inactive
     pub redeem_end_date: Option<u64>,
+    /// Random oracle
+    pub random_oracle: Pubkey,
 }
 
 impl PackSet {
@@ -110,6 +112,7 @@ impl PackSet {
         self.allowed_amount_to_redeem = params.allowed_amount_to_redeem;
         self.redeem_start_date = params.redeem_start_date;
         self.redeem_end_date = params.redeem_end_date;
+        self.random_oracle = params.random_oracle;
     }
 
     /// Increase pack cards counter
@@ -264,12 +267,14 @@ pub struct InitPackSetParams {
     pub redeem_start_date: u64,
     /// Redeem end date
     pub redeem_end_date: Option<u64>,
+    /// Random oracle
+    pub random_oracle: Pubkey,
 }
 
 impl Sealed for PackSet {}
 
 impl Pack for PackSet {
-    const LEN: usize = 853;
+    const LEN: usize = 885;
 
     fn pack_into_slice(&self, dst: &mut [u8]) {
         let mut slice = dst;

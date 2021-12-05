@@ -53,7 +53,6 @@ pub fn request_card_for_redeem(
     let user_token_account = next_account_info(account_info_iter).ok();
 
     // Validate owners
-    assert_owned_by(randomness_oracle_account, &randomness_oracle_program::id())?;
     assert_owned_by(pack_set_account, program_id)?;
     assert_owned_by(store_account, &metaplex::id())?;
     assert_owned_by(edition_mint_account, &spl_token::id())?;
@@ -78,6 +77,7 @@ pub fn request_card_for_redeem(
 
     let pack_set = PackSet::unpack(&pack_set_account.data.borrow())?;
     assert_account_key(store_account, &pack_set.store)?;
+    assert_account_key(randomness_oracle_account, &pack_set.random_oracle)?;
 
     let proving_process_seeds = &[
         ProvingProcess::PREFIX.as_bytes(),
