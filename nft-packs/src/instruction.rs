@@ -87,6 +87,7 @@ pub enum NFTPacksInstruction {
     /// - write                          pack_set
     /// - signer                         authority
     /// - read                           store
+    /// - read                           random_oracle
     /// - read                           Rent account
     /// - read                           Clock account
     /// - read                           whitelisted_creator. Optional key
@@ -319,6 +320,7 @@ pub fn init_pack(
     pack_set: &Pubkey,
     authority: &Pubkey,
     store: &Pubkey,
+    random_oracle: &Pubkey,
     whitelisted_creator: &Pubkey,
     args: InitPackSetArgs,
 ) -> Instruction {
@@ -326,6 +328,7 @@ pub fn init_pack(
         AccountMeta::new(*pack_set, false),
         AccountMeta::new_readonly(*authority, true),
         AccountMeta::new_readonly(*store, false),
+        AccountMeta::new_readonly(*random_oracle, false),
         AccountMeta::new_readonly(sysvar::rent::id(), false),
         AccountMeta::new_readonly(sysvar::clock::id(), false),
         AccountMeta::new_readonly(*whitelisted_creator, false),

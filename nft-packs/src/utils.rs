@@ -1,6 +1,11 @@
 //! Program utils
 
-use crate::{error::NFTPacksError, math::SafeMath, state::{MAX_LAG_SLOTS, ProvingProcess}};
+use crate::{
+    error::NFTPacksError,
+    math::SafeMath,
+    state::{ProvingProcess, MAX_LAG_SLOTS},
+};
+use borsh::BorshSerialize;
 use solana_program::{
     account_info::AccountInfo,
     clock::Clock,
@@ -14,7 +19,6 @@ use solana_program::{
 };
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
-use borsh::BorshSerialize;
 
 /// Assert uninitialized
 pub fn assert_uninitialized<T: IsInitialized>(account: &T) -> ProgramResult {

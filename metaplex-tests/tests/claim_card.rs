@@ -76,6 +76,9 @@ async fn success_fixed_probability() {
         .await
         .unwrap();
 
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
+    test_randomness_oracle.init(&mut context).await.unwrap();
+
     let test_pack_set = TestPackSet::new(store_key);
     test_pack_set
         .init(
@@ -90,6 +93,7 @@ async fn success_fixed_probability() {
                 redeem_start_date,
                 redeem_end_date,
             },
+            &test_randomness_oracle.keypair.pubkey(),
         )
         .await
         .unwrap();
@@ -166,8 +170,6 @@ async fn success_fixed_probability() {
     let new_mint = Keypair::new();
     let new_mint_token_acc = Keypair::new();
 
-    let mut test_randomness_oracle = TestRandomnessOracle::new();
-    test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
@@ -244,6 +246,9 @@ async fn success_max_supply_probability() {
         .await
         .unwrap();
 
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
+    test_randomness_oracle.init(&mut context).await.unwrap();
+
     let test_pack_set = TestPackSet::new(store_key);
     test_pack_set
         .init(
@@ -258,6 +263,7 @@ async fn success_max_supply_probability() {
                 redeem_start_date,
                 redeem_end_date,
             },
+            &test_randomness_oracle.keypair.pubkey(),
         )
         .await
         .unwrap();
@@ -330,8 +336,7 @@ async fn success_max_supply_probability() {
 
     test_pack_set.activate(&mut context).await.unwrap();
     test_pack_set.clean_up(&mut context).await.unwrap();
-    let mut test_randomness_oracle = TestRandomnessOracle::new();
-    test_randomness_oracle.init(&mut context).await.unwrap();
+
     test_randomness_oracle.update(&mut context).await.unwrap();
 
     context.warp_to_slot(3).unwrap();
@@ -405,6 +410,9 @@ async fn success_claim_two_same_cards() {
         .await
         .unwrap();
 
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
+    test_randomness_oracle.init(&mut context).await.unwrap();
+
     let test_pack_set = TestPackSet::new(store_key);
     test_pack_set
         .init(
@@ -419,6 +427,7 @@ async fn success_claim_two_same_cards() {
                 redeem_start_date,
                 redeem_end_date,
             },
+            &test_randomness_oracle.keypair.pubkey(),
         )
         .await
         .unwrap();
@@ -500,8 +509,6 @@ async fn success_claim_two_same_cards() {
     let new_mint1 = Keypair::new();
     let new_mint_token_acc1 = Keypair::new();
 
-    let mut test_randomness_oracle = TestRandomnessOracle::new();
-    test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
@@ -597,6 +604,9 @@ async fn success_claim_decrement_redeem_cards() {
         .await
         .unwrap();
 
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
+    test_randomness_oracle.init(&mut context).await.unwrap();
+
     let test_pack_set = TestPackSet::new(store_key);
     test_pack_set
         .init(
@@ -611,6 +621,7 @@ async fn success_claim_decrement_redeem_cards() {
                 redeem_start_date,
                 redeem_end_date,
             },
+            &test_randomness_oracle.keypair.pubkey(),
         )
         .await
         .unwrap();
@@ -692,8 +703,6 @@ async fn success_claim_decrement_redeem_cards() {
     let new_mint1 = Keypair::new();
     let new_mint_token_acc1 = Keypair::new();
 
-    let mut test_randomness_oracle = TestRandomnessOracle::new();
-    test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
@@ -804,6 +813,9 @@ async fn success_claim_two_indexes() {
         .await
         .unwrap();
 
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
+    test_randomness_oracle.init(&mut context).await.unwrap();
+
     let test_pack_set = TestPackSet::new(store_key);
     test_pack_set
         .init(
@@ -818,6 +830,7 @@ async fn success_claim_two_indexes() {
                 redeem_start_date,
                 redeem_end_date,
             },
+            &test_randomness_oracle.keypair.pubkey(),
         )
         .await
         .unwrap();
@@ -920,8 +933,6 @@ async fn success_claim_two_indexes() {
     let new_mint = Keypair::new();
     let new_mint_token_acc = Keypair::new();
 
-    let mut test_randomness_oracle = TestRandomnessOracle::new();
-    test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
@@ -1014,6 +1025,9 @@ async fn success_claim_after_redeem_end_date() {
         .await
         .unwrap();
 
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
+    test_randomness_oracle.init(&mut context).await.unwrap();
+
     let test_pack_set = TestPackSet::new(store_key);
     test_pack_set
         .init(
@@ -1028,6 +1042,7 @@ async fn success_claim_after_redeem_end_date() {
                 redeem_start_date,
                 redeem_end_date,
             },
+            &test_randomness_oracle.keypair.pubkey(),
         )
         .await
         .unwrap();
@@ -1099,8 +1114,6 @@ async fn success_claim_after_redeem_end_date() {
     test_pack_set.activate(&mut context).await.unwrap();
     test_pack_set.clean_up(&mut context).await.unwrap();
 
-    let mut test_randomness_oracle = TestRandomnessOracle::new();
-    test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle.update(&mut context).await.unwrap();
 
     context.warp_to_slot(3).unwrap();
@@ -1172,6 +1185,9 @@ async fn fail_wrong_user_wallet() {
         .await
         .unwrap();
 
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
+    test_randomness_oracle.init(&mut context).await.unwrap();
+
     let test_pack_set = TestPackSet::new(store_key);
     test_pack_set
         .init(
@@ -1186,6 +1202,7 @@ async fn fail_wrong_user_wallet() {
                 redeem_start_date,
                 redeem_end_date,
             },
+            &test_randomness_oracle.keypair.pubkey(),
         )
         .await
         .unwrap();
@@ -1258,8 +1275,7 @@ async fn fail_wrong_user_wallet() {
 
     test_pack_set.activate(&mut context).await.unwrap();
     test_pack_set.clean_up(&mut context).await.unwrap();
-    let mut test_randomness_oracle = TestRandomnessOracle::new();
-    test_randomness_oracle.init(&mut context).await.unwrap();
+
     test_randomness_oracle.update(&mut context).await.unwrap();
 
     test_pack_set
@@ -1419,6 +1435,9 @@ async fn fail_claim_twice() {
         .await
         .unwrap();
 
+    let mut test_randomness_oracle = TestRandomnessOracle::new();
+    test_randomness_oracle.init(&mut context).await.unwrap();
+
     let test_pack_set = TestPackSet::new(store_key);
     test_pack_set
         .init(
@@ -1433,6 +1452,7 @@ async fn fail_claim_twice() {
                 redeem_start_date,
                 redeem_end_date,
             },
+            &test_randomness_oracle.keypair.pubkey(),
         )
         .await
         .unwrap();
@@ -1506,8 +1526,6 @@ async fn fail_claim_twice() {
     test_pack_set.activate(&mut context).await.unwrap();
     test_pack_set.clean_up(&mut context).await.unwrap();
 
-    let mut test_randomness_oracle = TestRandomnessOracle::new();
-    test_randomness_oracle.init(&mut context).await.unwrap();
     test_randomness_oracle.update(&mut context).await.unwrap();
 
     context.warp_to_slot(3).unwrap();
