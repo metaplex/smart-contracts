@@ -161,10 +161,10 @@ pub fn request_card_for_redeem(
         }
     }
 
-    let redeemed_cards: u64 = proving_process.cards_to_redeem.values().map(|i| *i as u64).sum();
+    let requested_cards: u64 = proving_process.cards_to_redeem.values().map(|i| *i as u64).sum();
 
     // Check if user already get all the card indexes
-    if redeemed_cards == pack_set.allowed_amount_to_redeem as u64 {
+    if requested_cards.error_add(proving_process.cards_redeemed as u64)? == pack_set.allowed_amount_to_redeem as u64 {
         return Err(NFTPacksError::UserRedeemedAllCards.into());
     }
 
