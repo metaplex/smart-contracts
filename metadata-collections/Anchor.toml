@@ -1,0 +1,12 @@
+[programs.localnet]
+metadata_collections = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "localnet"
+wallet = "/home/espi/.config/solana/id.json"
+
+[scripts]
+test = "yarn test"
